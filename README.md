@@ -99,6 +99,6 @@ $ /opt/storm/bin/storm jar ./demo-dist.jar com.example.TopologyStarter /var/spoo
 Contributors
 ============
 
-* Pascal de Kloe ([@GitHub](http://github.com/pascaldekloe)
-* Jethro Bakker ([@GitHub](http://github.com/jethrobakker)
-* Jasper van Veghel ([@GitHub](http://github.com/jaspervanveghel)
+* Pascal de Kloe [@GitHub](http://github.com/pascaldekloe)
+* Jethro Bakker [@GitHub](http://github.com/jethrobakker)
+* Jasper van Veghel [@GitHub](http://github.com/jaspervanveghel)
