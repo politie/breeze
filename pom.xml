@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xsi:schemaLocation="
+			http://maven.apache.org/POM/4.0.0
+			http://maven.apache.org/xsd/maven-4.0.0.xsd
+		">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>eu.icolumbo.breeze</groupId>
+	<artifactId>breeze</artifactId>
+	<version>1.0.0-SNAPSHOT</version>
+
+	<dependencies>
+		<dependency>
+			<groupId>storm</groupId>
+			<artifactId>storm</artifactId>
+			<version>0.9.0.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
+			<version>3.2.5.RELEASE</version>
+		</dependency>
+
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.11</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-core</artifactId>
+			<version>1.9.5</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<properties>
+		<java.version>1.7</java.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+
+	<build>
+		<plugins>
+
+			<plugin>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.1</version>
+				<configuration>
+					<source>${java.version}</source>
+					<target>${java.version}</target>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.6.3.201306030806</version>
+				<configuration>
+					<rules>
+						<rule>
+							<element>BUNDLE</element>
+							<limits>
+								<limit>
+									<counter>LINE</counter>
+									<value>MISSEDCOUNT</value>
+									<maximum>2</maximum>
+								</limit>
+								<limit>
+									<counter>CLASS</counter>
+									<value>MISSEDCOUNT</value>
+									<maximum>0</maximum>
+								</limit>
+							</limits>
+						</rule>
+					</rules>
+				</configuration>
+			</plugin>
+
+		</plugins>
+	</build>
+
+	<name>Breeze</name>
+	<description>Spring support for Storm</description>
+	<url>http://github.com/internet-research-network/storm-spring-support</url>
+	<inceptionYear>2013</inceptionYear>
+
+	<licenses>
+		<license>
+			<name>Public Domain</name>
+			<url>http://en.wikipedia.org/wiki/Public_domain</url>
+		</license>
+	</licenses>
+
+	<organization>
+		<name>iRN iColumbo</name>
+		<url>http://www.icolumbo.eu/</url>
+	</organization>
+
+	<developers>
+		<developer>
+			<id>pascal</id>
+			<name>Pascal S. de Kloe</name>
+			<email>pascal@quies.net</email>
+			<organization>Quies Net</organization>
+		</developer>
+		<developer>
+			<id>jethro</id>
+			<name>Jethro Bakker</name>
+			<email>jethrobakker@gmail.com</email>
+		</developer>
+		<developer>
+			<id>jasper</id>
+			<name>Jasper van Veghel</name>
+			<email>jasper@seajas.com</email>
+		</developer>
+	</developers>
+
+	<issueManagement>
+		<url>https://github.com/internet-research-network/storm-spring-support/issues</url>
+		<system>GitHub Issues</system>
+	</issueManagement>
+
+	<scm>
+		<connection>scm:git:git://github.com/internet-research-network/storm-spring-support.git</connection>
+		<developerConnection>scm:git:git://github.com/internet-research-network/storm-spring-support.git</developerConnection>
+		<url>http://github.com/internet-research-network/storm-spring-support</url>
+	</scm>
+
+	<repositories>
+		<repository>
+			<id>clojars</id>
+			<url>http://clojars.org/repo</url>
+		</repository>
+	</repositories>
+
+</project>
