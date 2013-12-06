@@ -1,0 +1,78 @@
+package eu.icolumbo.breeze;
+
+import backtype.storm.task.TopologyContext;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
+import org.springframework.beans.factory.BeanDefinitionStoreException;
+import org.springframework.context.ApplicationContext;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.doReturn;
+
+
+/**
+ * Tests {@link SingletonApplicationContext}.
+ * @author Pascal S. de Kloe
+ */
+@RunWith(MockitoJUnitRunner.class)
+public class SingletonApplicationContextTest {
+
+	@Mock
+	TopologyContext topologyContextMock;
+
+	Map<String,Object> stormConf = new HashMap<>();
+
+
+	public static class TestBean {
+		private String message;
+		public String getMessage() {return message;}
+		public void setMessage(String value) {message = value;}
+	}
+
+
+	@Before
+	public void init() {
+		stormConf.clear();
+	}
+
+	@Test
+	public void xmlContext() {
+		doReturn("simple").when(topologyContextMock).getStormId();
+		ApplicationContext result = SingletonApplicationContext.get(stormConf, topologyContextMock);
+		assertEquals("classpath:/simple-context.xml", result.getId());
+
+		TestBean bean = result.getBean(TestBean.class);
+		assertEquals("Hello", bean.getMessage());
+	}
+
+	@Test(expected=BeanDefinitionStoreException.class)
+	public void noContext() {
+		doReturn("unknown").when(topologyContextMock).getStormId();
+		SingletonApplicationContext.get(stormConf, topologyContextMock);
+	}
+
+	@Test
+	public void stormProperties() {
+		Object expected = "Hello";
+		stormConf.put("greeting", expected);
+
+		doReturn("properties").when(topologyContextMock).getStormId();
+		ApplicationContext result = SingletonApplicationContext.get(stormConf, topologyContextMock);
+		assertEquals("classpath:/properties-context.xml", result.getId());
+
+		TestBean bean = result.getBean(TestBean.class);
+		assertEquals(expected, bean.message);
+	}
+
+	@Test
+	public void single() {
+		assertEquals(SingletonApplicationContext.INSTANCE, SingletonApplicationContext.valueOf("INSTANCE"));
+		assertEquals(1, SingletonApplicationContext.values().length);
+	}
+
+}
