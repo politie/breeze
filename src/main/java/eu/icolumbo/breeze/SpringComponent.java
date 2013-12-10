@@ -86,6 +86,9 @@ public abstract class SpringComponent implements IComponent, ApplicationContextA
 		spring.getBean(beanType);
 	}
 
+	/**
+	 * Registers the {@link #getOutputFields() output field names}.
+	 */
 	@Override
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
 		declarer.declare(new Fields(outputFields));
@@ -218,6 +221,34 @@ public abstract class SpringComponent implements IComponent, ApplicationContextA
 		String msg = format("Ambiguity between %s and %s",
 				readable[0], readable[1]);
 		return new ReflectiveOperationException(msg);
+	}
+
+	/**
+	 * Gets the Storm & Spring identifier.
+	 */
+	public String getId() {
+		return id;
+	}
+
+	/**
+	 * Sets the Storm & Spring identifier.
+	 */
+	public void setId(String value) {
+		id = value;
+	}
+
+	/**
+	 * Gets the field names.
+	 */
+	public String[] getInputFields() {
+		return inputFields;
+	}
+
+	/**
+	 * Gets the field names.
+	 */
+	public String[] getOutputFields() {
+		return outputFields;
 	}
 
 	/**

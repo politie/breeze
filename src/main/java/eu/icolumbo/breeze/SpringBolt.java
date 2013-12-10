@@ -42,6 +42,10 @@ public class SpringBolt extends SpringComponent implements IRichBolt {
 		super.init(stormConf, topologyContext);
 	}
 
+	/**
+	 * Registers the {@link #setPassThroughFields(String...) pass through}
+	 * and the {@link #getOutputFields() output field names}.
+	 */
 	@Override
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
 		List<String> names = new ArrayList<>();
@@ -89,8 +93,16 @@ public class SpringBolt extends SpringComponent implements IRichBolt {
 	}
 
 	/**
-	 * Sets the field names which should be copied from the input tuple in addition to
-	 * function output fields.
+	 * Gets the field names which should be copied from the input tuple in addition to
+	 * the {@link #getOutputFields() output fields}.
+	 */
+	public String[] getPassThroughFields() {
+		return passThroughFields;
+	}
+
+	/**
+	 * Gets the field names which should be copied from the input tuple in addition to
+	 * the {@link #getOutputFields() output fields}.
 	 */
 	public void setPassThroughFields(String... value) {
 		for (String name : value)
