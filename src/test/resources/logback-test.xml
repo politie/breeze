@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<configuration>
+	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>%level %logger - %msg%n</pattern>
+		</encoder>
+	</appender>
+
+	<logger name="eu.icolumbo" level="TRACE"/>
+
+	<root level="INFO">
+		<appender-ref ref="console"/>
+	</root>
+</configuration>
