@@ -35,6 +35,8 @@ public abstract class SpringComponent implements IComponent, ApplicationContextA
 	protected final String[] inputFields, outputFields;
 
 	private transient String id;
+	private transient Number parallelism;
+
 	private transient ApplicationContext spring;
 	transient Method method;
 
@@ -235,6 +237,20 @@ public abstract class SpringComponent implements IComponent, ApplicationContextA
 	 */
 	public void setId(String value) {
 		id = value;
+	}
+
+	/**
+	 * Gets the Strom parallelism hint.
+	 */
+	public Number getParallelism() {
+		return parallelism;
+	}
+
+	/**
+	 * Sets the Storm parallelism hint.
+	 */
+	public void setParallelism(Number value) {
+		parallelism = value;
 	}
 
 	/**

@@ -97,16 +97,21 @@ public class TopologyCompilation extends TreeMap<SpringSpout,List<SpringBolt>> i
 		}
 
 		logger.trace("Compilation: {}", this);
-		if (unbound.isEmpty())
-			logger.info("Compilation succeeded");
-		else
-			logger.error("Can't resolve all input fields for: {}", unbound);
+		logger.info("Compilation finished");
 	}
 
 	@Override
 	public void clear() {
 		super.clear();
 		unbound.clear();
+	}
+
+	/**
+	 * Checks whether {@link #run() the complitation} succeeded.
+	 */
+	public void verify() throws IllegalStateException {
+		if (unbound.isEmpty()) return;
+		throw new IllegalStateException("Can't resolve all input fields for: " + unbound);
 	}
 
 }
