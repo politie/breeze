@@ -59,7 +59,7 @@
 				</xs:attribute>
 				<xs:attribute name="signature" type="xs:string" use="required"/>
 				<xs:attribute name="outputFields" type="xs:NMTOKENS"/>
-				<xs:attribute name="parallelism" type="xs:nonNegativeInteger" default="0"/>
+				<xs:attribute name="parallelism" type="xs:positiveInteger" default="1"/>
 				<xs:attribute name="scatterOutput" type="xs:boolean" default="false"/>
 			</xs:extension>
 		</xs:complexContent>
