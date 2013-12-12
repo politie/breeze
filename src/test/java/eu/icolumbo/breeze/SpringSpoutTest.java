@@ -7,16 +7,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import java.util.Collections;
+
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyList;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.*;
 
 
 /**
@@ -33,12 +30,12 @@ public class SpringSpoutTest {
 	@Mock
 	private TopologyContext contextMock;
 
-	Map<String,Object> stormConf = Collections.EMPTY_MAP;
+	Map<String,Object> stormConf = new HashMap<>();
 
 
 	@Test
 	public void happyFlow() throws Exception {
-		doReturn("topology").when(contextMock).getStormId();
+		stormConf.put("topology.name", "topology");
 
 		SpringSpout subject = new SpringSpout(TestBean.class, "ping()", "echo");
 		subject.open(stormConf, contextMock, collectorMock);
@@ -49,7 +46,7 @@ public class SpringSpoutTest {
 
 	@Test
 	public void error() throws Exception {
-		doReturn("topology").when(contextMock).getStormId();
+		stormConf.put("topology.name", "topology");
 
 		SpringSpout subject = new SpringSpout(TestBean.class, "clone()", "copy");
 		subject.open(stormConf, contextMock, collectorMock);

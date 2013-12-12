@@ -8,16 +8,17 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.beans.factory.BeanDefinitionStoreException;
 import org.springframework.context.ApplicationContext;
+
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.doReturn;
 
 
 /**
  * Tests {@link SingletonApplicationContext}.
  * @author Pascal S. de Kloe
+ * @author Jethro Bakker
  */
 @RunWith(MockitoJUnitRunner.class)
 public class SingletonApplicationContextTest {
@@ -27,13 +28,11 @@ public class SingletonApplicationContextTest {
 
 	Map<String,Object> stormConf = new HashMap<>();
 
-
 	public static class TestBean {
 		private String message;
 		public String getMessage() {return message;}
 		public void setMessage(String value) {message = value;}
 	}
-
 
 	@Before
 	public void init() {
@@ -42,7 +41,8 @@ public class SingletonApplicationContextTest {
 
 	@Test
 	public void xmlContext() {
-		doReturn("simple").when(topologyContextMock).getStormId();
+		stormConf.put("topology.name", "simple");
+
 		ApplicationContext result = SingletonApplicationContext.get(stormConf, topologyContextMock);
 		assertEquals("classpath:/simple-context.xml", result.getId());
 
@@ -52,7 +52,12 @@ public class SingletonApplicationContextTest {
 
 	@Test(expected=BeanDefinitionStoreException.class)
 	public void noContext() {
-		doReturn("unknown").when(topologyContextMock).getStormId();
+		stormConf.put("topology.name", "unkown");
+		SingletonApplicationContext.get(stormConf, topologyContextMock);
+	}
+
+	@Test(expected=IllegalStateException.class)
+	public void noConfig() {
 		SingletonApplicationContext.get(stormConf, topologyContextMock);
 	}
 
@@ -60,8 +65,8 @@ public class SingletonApplicationContextTest {
 	public void stormProperties() {
 		Object expected = "Hello";
 		stormConf.put("greeting", expected);
+		stormConf.put("topology.name", "properties");
 
-		doReturn("properties").when(topologyContextMock).getStormId();
 		ApplicationContext result = SingletonApplicationContext.get(stormConf, topologyContextMock);
 		assertEquals("classpath:/properties-context.xml", result.getId());
 

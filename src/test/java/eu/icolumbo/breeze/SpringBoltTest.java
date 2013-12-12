@@ -38,6 +38,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 /**
  * Tests {@link SpringBolt}.
  * @author Pascal S. de Kloe
+ * @author Jethro Bakker
  */
 @RunWith(MockitoJUnitRunner.class)
 public class SpringBoltTest {
@@ -63,7 +64,7 @@ public class SpringBoltTest {
 	@Before
 	public void init() {
 		stormConf.clear();
-		doReturn("topology").when(topologyContextMock).getStormId();
+		stormConf.put("topology.name", "topology");
 		doReturn(new TestBean()).when(applicationContextMock).getBean(TestBean.class);
 	}
 

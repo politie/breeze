@@ -55,7 +55,7 @@ public class BeanDefinitionTest extends AbstractXmlApplicationContext {
 		Bolt boltSpec = topology.get_bolts().get("testBolt");
 		assertNotNull("bolt spec by ID", boltSpec);
 
-		assertEquals("spout parralelism", 0, spoutSpec.get_common().get_parallelism_hint());
+		assertEquals("spout parralelism", 1, spoutSpec.get_common().get_parallelism_hint());
 		assertEquals("bolt parralelism", 2, boltSpec.get_common().get_parallelism_hint());
 
 		Map<GlobalStreamId,Grouping> boltInputs = boltSpec.get_common().get_inputs();
