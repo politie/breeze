@@ -34,17 +34,20 @@ public enum SingletonApplicationContext {
 	 * Gets the Spring setup for the respective Storm topology.
 	 */
 	public static synchronized ApplicationContext get(Map stormConf, TopologyContext topologyContext) {
-		String id = topologyContext.getStormId();
-		logger.debug("Application context lookup for topology '{}'", id);
+		String topologyName = (String) stormConf.get("topology.name");
+		if (topologyName == null)
+			throw new IllegalStateException("Topology name is mandatory");
+
+		logger.debug("Application context lookup for topology '{}'", topologyName);
 
 		Map<String,Object> properties = Collections.checkedMap(stormConf, String.class, Object.class);
 
-		ApplicationContext entry = INSTANCE.registry.get(id);
+		ApplicationContext entry = INSTANCE.registry.get(topologyName);
 		if (entry == null) {
 			logger.debug("Need new application context");
 			entry = instantiate(properties);
-			logger.info("Application context instantiated for topology '{}'", id);
-			INSTANCE.registry.put(id, entry);
+			logger.info("Application context instantiated for topology '{}'", topologyName);
+			INSTANCE.registry.put(topologyName, entry);
 		}
 
 		return entry;
