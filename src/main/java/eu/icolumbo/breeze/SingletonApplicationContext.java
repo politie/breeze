@@ -1,5 +1,6 @@
 package eu.icolumbo.breeze;
 
+import backtype.storm.Config;
 import backtype.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static java.lang.String.format;
+import static org.springframework.util.StringUtils.hasText;
 
 
 /**
@@ -34,9 +36,9 @@ public enum SingletonApplicationContext {
 	 * Gets the Spring setup for the respective Storm topology.
 	 */
 	public static synchronized ApplicationContext get(Map stormConf, TopologyContext topologyContext) {
-		String topologyName = (String) stormConf.get("topology.name");
-		if (topologyName == null)
-			throw new IllegalStateException("Topology name is mandatory");
+		String topologyName = (String) stormConf.get(Config.TOPOLOGY_NAME);
+		if (! hasText(topologyName))
+			throw new IllegalStateException("Missing '" + Config.TOPOLOGY_NAME + "' in Storm configuration");
 
 		logger.debug("Application context lookup for topology '{}'", topologyName);
 
@@ -54,7 +56,7 @@ public enum SingletonApplicationContext {
 	}
 
 	private static ApplicationContext instantiate(Map<String, Object> stormConf) {
-		String topologyName = (String) stormConf.get("topology.name");
+		String topologyName = (String) stormConf.get(Config.TOPOLOGY_NAME);
 		String[] configLocations = {format("classpath:/%s-context.xml", topologyName)};
 		AbstractApplicationContext result = new ClassPathXmlApplicationContext(configLocations, false);
 		result.setId(configLocations[0]);
