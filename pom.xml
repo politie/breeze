@@ -173,8 +173,8 @@
 	</issueManagement>
 
 	<scm>
-		<connection>scm:git:git://github.com/internet-research-network/storm-spring-support.git</connection>
-		<developerConnection>scm:git:git://github.com/internet-research-network/storm-spring-support.git</developerConnection>
+		<connection>scm:git:https://github.com/internet-research-network/breeze.git</connection>
+		<developerConnection>scm:git:https://github.com/internet-research-network/breeze.git</developerConnection>
 		<url>http://github.com/internet-research-network/storm-spring-support</url>
 	</scm>
 
