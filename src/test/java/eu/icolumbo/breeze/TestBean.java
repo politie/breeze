@@ -12,6 +12,33 @@ import static java.util.Arrays.asList;
  */
 public class TestBean {
 
+	public static class Data {
+		private String id, message;
+
+		public String getId() {
+			return id;
+		}
+
+		public void setId(String value) {
+			id = value;
+		}
+
+		public String getMessage() {
+			return message;
+		}
+
+		public void setMessage(String value) {
+			message = value;
+		}
+
+		public void setSetterOnly(Object value) {
+		}
+
+		private Object getPrivateGetter() {
+			return new Object();
+		}
+	}
+
 	public void nop() {
 	}
 
@@ -40,6 +67,13 @@ public class TestBean {
 		result.put("x", a);
 		result.put("y", b);
 		return result;
+	}
+
+	public Data greet(Number number) {
+		Data data = new Data();
+		data.setId(number.toString());
+		data.setMessage("Hello " + number);
+		return data;
 	}
 
 }

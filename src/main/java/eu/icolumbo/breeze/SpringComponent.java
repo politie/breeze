@@ -9,6 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+
+import java.beans.PropertyDescriptor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -17,6 +19,7 @@ import java.util.Map;
 import java.util.StringTokenizer;
 
 import static java.lang.String.format;
+import static org.springframework.beans.BeanUtils.getPropertyDescriptor;
 
 
 /**
@@ -133,30 +136,50 @@ public abstract class SpringComponent implements IComponent, ApplicationContextA
 				returnEntries = scatter(returnValue);
 			else
 				returnEntries = new Object[] {returnValue};
+
+			int i = returnEntries.length;
+			Values[] mapping = new Values[i];
+			while (--i >= 0) {
+				Object entry = returnEntries[i];
+				if (outputFields.length == 1)
+					mapping[i] = new Values(entry);
+				else
+					mapping[i] = new Values(mapMultipleOutputFields(entry));
+			}
+			return mapping;
 		} catch (IllegalAccessException e) {
 			throw new SecurityException(e);
 		}
+	}
 
-		int i = returnEntries.length;
-		Values[] mapping = new Values[i];
-		while (--i >= 0) {
-			Object entry = returnEntries[i];
-			if (outputFields.length == 1) {
-				mapping[i] = new Values(entry);
-			} else {
-				int j = outputFields.length;
-				Object[] output = new Object[j];
+	private Object[] mapMultipleOutputFields(Object result) throws IllegalAccessException, InvocationTargetException {
+		int i = outputFields.length;
+		Object[] output = new Object[i];
 
-				if (entry instanceof Map) {
-					Map<?,?> map = (Map<?,?>) entry;
-					while (--j >= 0)
-						output[j] = map.get(outputFields[j]);
+		if (result instanceof Map) {
+			Map<?,?> map = (Map<?,?>) result;
+			while (--i >= 0)
+				output[i] = map.get(outputFields[i]);
+		} else if (result != null) {
+			while (--i >= 0) {
+				String name = outputFields[i];
+				PropertyDescriptor descriptor = getPropertyDescriptor(result.getClass(), name);
+				if (descriptor == null) {
+					logger.warn("Missing property '{}' on {} for {}",
+							new Object[] {name, result.getClass(), this});
+					continue;
 				}
-
-				mapping[i] = new Values(output);
+				Method method = descriptor.getReadMethod();
+				if (method == null) {
+					logger.warn("Missing property '{}' getter on {} for {}",
+							new Object[] {name, result.getClass(), this});
+					continue;
+				}
+				output[i] = method.invoke(result);
 			}
 		}
-		return mapping;
+
+		return output;
 	}
 
 	private static Object[] scatter(Object o) {

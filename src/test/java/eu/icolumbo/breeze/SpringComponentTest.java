@@ -3,6 +3,7 @@ package eu.icolumbo.breeze;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
+import backtype.storm.tuple.Values;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -95,6 +96,30 @@ public class SpringComponentTest {
 			assertEquals("Can't use configured bean method", e.getMessage());
 			assertNotNull(e.getCause());
 		}
+	}
+
+	@Test
+	public void multipleOutputFieldsBean() throws Exception {
+		SpringComponent subject = new SpringComponent(TestBean.class, "greet(n)", "id", "message", "unknown") {};
+		subject.setApplicationContext(applicationContextMock);
+		subject.init(stormConf, topologyContextMock);
+		doReturn(new TestBean()).when(applicationContextMock).getBean(TestBean.class);
+
+		Values[] result = subject.invoke(8);
+		Values[] expected = {new Values("8", "Hello 8", null)};
+		assertArrayEquals(expected, result);
+	}
+
+	@Test
+	public void multipleOutputFieldsBeanBroken() throws Exception {
+		SpringComponent subject = new SpringComponent(TestBean.class, "greet(n)", "setterOnly", "privateGetter") {};
+		subject.setApplicationContext(applicationContextMock);
+		subject.init(stormConf, topologyContextMock);
+		doReturn(new TestBean()).when(applicationContextMock).getBean(TestBean.class);
+
+		Values[] result = subject.invoke(8);
+		Values[] expected = {new Values(null, null)};
+		assertArrayEquals(expected, result);
 	}
 
 }
