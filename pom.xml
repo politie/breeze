@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="US-ASCII"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="    http://maven.apache.org/POM/4.0.0    http://maven.apache.org/xsd/maven-4.0.0.xsd   ">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xsi:schemaLocation="
+			http://maven.apache.org/POM/4.0.0
+			http://maven.apache.org/xsd/maven-4.0.0.xsd
+		">
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>eu.icolumbo.breeze</groupId>
@@ -63,14 +68,6 @@
 							<main-class>eu.icolumbo.breeze.namespace.TopologyStarter</main-class>
 						</manifestEntries>
 					</archive>
-				</configuration>
-			</plugin>
-
-			<plugin>
-				<artifactId>maven-release-plugin</artifactId>
-				<version>2.4.2</version>
-				<configuration>
-					<goals>install</goals>
 				</configuration>
 			</plugin>
 
@@ -167,52 +164,11 @@
 		<system>GitHub Issues</system>
 	</issueManagement>
 
-	<scm>
-		<connection>scm:git:https://github.com/internet-research-network/breeze.git</connection>
-		<developerConnection>scm:git:https://github.com/internet-research-network/breeze.git</developerConnection>
-		<url>http://github.com/internet-research-network/storm-spring-support</url>
-	  <tag>breeze-1.0.0</tag>
-  </scm>
-
 	<repositories>
 		<repository>
 			<id>clojars</id>
 			<url>http://clojars.org/repo</url>
 		</repository>
 	</repositories>
-
-	<profiles>
-		<profile>
-			<id>release</id>
-			<build>
-				<plugins>
-					<plugin>
-						<artifactId>maven-source-plugin</artifactId>
-						<version>2.2.1</version>
-						<executions>
-							<execution>
-								<id>attach-sources</id>
-								<goals>
-									<goal>jar</goal>
-								</goals>
-							</execution>
-						</executions>
-					</plugin>
-					<plugin>
-						<artifactId>maven-javadoc-plugin</artifactId>
-						<version>2.9.1</version>
-						<executions>
-							<execution>
-								<id>attach-javadocs</id>
-								<goals>
-									<goal>jar</goal>
-								</goals>
-							</execution>
-						</executions>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-	</profiles>
 
 </project>
