@@ -14,6 +14,7 @@ import java.util.Properties;
 
 import static java.lang.System.err;
 import static java.lang.System.exit;
+import static org.springframework.util.StringUtils.hasText;
 
 
 /**
@@ -77,7 +78,9 @@ public class TopologyStarter extends Thread {
 
 			Properties systemProperties = System.getProperties();
 			if (systemProperties.containsKey(LOCAL_RUN_PARAM)) {
-				String timeout = systemProperties.getProperty(LOCAL_RUN_PARAM, LOCAL_RUN_DEFAULT_TIMEOUT);
+				String timeout = systemProperties.getProperty(LOCAL_RUN_PARAM);
+				if (! hasText(timeout))
+					timeout = LOCAL_RUN_DEFAULT_TIMEOUT;
 				long ms = 1000L * Integer.parseInt(timeout);
 
 				LocalCluster cluster = new LocalCluster();
