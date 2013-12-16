@@ -20,6 +20,59 @@ Storm's transaction architecture is honored with `#setAnchor(boolean)`.
 
 Breeze currently only support shuffle stream grouping.
 
+
+Get Started
+===========
+
+The [kickstarter project](https://github.com/internet-research-network/breeze-kickstarter) demonstrates how to define a topology with the [Breeze namespace](https://github.com/internet-research-network/breeze-kickstarter/blob/master/src/main/resources/applicationContext.xml) and [regular bean definitions](https://github.com/internet-research-network/breeze-kickstarter/blob/master/src/main/resources/demo-context.xml).
+
+Maven
+-----
+
+```xml
+<dependency>
+	<groupId>eu.icolumbo.breeze</groupId>
+	<artifactId>breeze</artifactId>
+	<version>1.0.0</version>
+</dependency>
+```
+
+Add the Clojars repository for Storm and the iRN repository for Breeze.
+
+```xml
+<repositories>
+	<repository>
+		<id>clojars</id>
+		<url>http://clojars.org/repo</url>
+	</repository>
+	<repository>
+		<id>irn</id>
+		<url>https://raw.github.com/internet-research-network/repository/master</url>
+	</repository>
+</repositories>
+```
+
+The default topology starter can be used for local testing.
+```xml
+<plugin>
+	<groupId>org.codehaus.mojo</groupId>
+	<artifactId>exec-maven-plugin</artifactId>
+	<version>1.1</version>
+	<configuration>
+		<mainClass>eu.icolumbo.breeze.namespace.TopologyStarter</mainClass>
+		<arguments>
+			<argument>demo</argument>
+		</arguments>
+		<systemProperties>
+			<property>
+				<key>localRun</key>
+			</property>
+		</systemProperties>
+	</configuration>
+</plugin>
+```
+
+
 Contributors
 ============
 
