@@ -20,6 +20,8 @@ Storm's transaction architecture is honored with `#setAnchor(boolean)`.
 
 Breeze currently only support shuffle stream grouping.
 
+See [breeze-kickstarter](https://github.com/internet-research-network/breeze-kickstarter) for examples.
+
 Contributors
 ============
 
