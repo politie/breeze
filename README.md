@@ -37,7 +37,7 @@ Maven
 </dependency>
 ```
 
-Add the Clojars repository for Storm and the iRN repository for Breeze.
+Add the Clojars repository for Storm.
 
 ```xml
 <repositories>
@@ -45,14 +45,11 @@ Add the Clojars repository for Storm and the iRN repository for Breeze.
 		<id>clojars</id>
 		<url>http://clojars.org/repo</url>
 	</repository>
-	<repository>
-		<id>irn</id>
-		<url>https://raw.github.com/internet-research-network/repository/master</url>
-	</repository>
 </repositories>
 ```
 
 The default topology starter can be used for local testing.
+
 ```xml
 <plugin>
 	<groupId>org.codehaus.mojo</groupId>
@@ -79,3 +76,4 @@ Contributors
 * Pascal de Kloe [@GitHub](http://github.com/pascaldekloe)
 * Jethro Bakker [@GitHub](http://github.com/jethrobakker)
 * Jasper van Veghel [@GitHub](http://github.com/jaspervanveghel)
+* Sonatype [central repository support](https://issues.sonatype.org/browse/OSSRH-8126)
