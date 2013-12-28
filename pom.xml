@@ -125,7 +125,7 @@
 
 	<name>Breeze</name>
 	<description>Spring support for Storm</description>
-	<url>http://github.com/internet-research-network/storm-spring-support</url>
+	<url>http://github.com/internet-research-network/breeze</url>
 	<inceptionYear>2013</inceptionYear>
 
 	<licenses>
@@ -160,7 +160,7 @@
 	</developers>
 
 	<issueManagement>
-		<url>https://github.com/internet-research-network/storm-spring-support/issues</url>
+		<url>https://github.com/internet-research-network/breeze/issues</url>
 		<system>GitHub Issues</system>
 	</issueManagement>
 
