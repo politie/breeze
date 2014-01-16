@@ -96,8 +96,7 @@ public class TopologyCompilation extends TreeMap<SpringSpout,List<SpringBolt>> i
 			}
 		}
 
-		logger.trace("Compilation: {}", this);
-		logger.info("Compilation finished");
+		logger.info("Compiled as: {}", this);
 	}
 
 	@Override
