@@ -54,12 +54,14 @@ public class TopologyFactoryBean extends TopologyCompilation implements FactoryB
 		for (Map.Entry<SpringSpout,List<SpringBolt>> line : entrySet()) {
 			SpringSpout spout = line.getKey();
 			String lastId = spout.getId();
+			String streamId = spout.getOutputStreamId();
 			builder.setSpout(lastId, spout, spout.getParallelism());
 			for (SpringBolt bolt : line.getValue()) {
 				String id = bolt.getId();
 				BoltDeclarer declarer = builder.setBolt(id, bolt, bolt.getParallelism());
-				declarer.noneGrouping(lastId);
+				declarer.noneGrouping(lastId, streamId);
 				lastId = id;
+				streamId = bolt.getOutputStreamId();
 			}
 		}
 

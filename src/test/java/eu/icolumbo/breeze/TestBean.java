@@ -54,6 +54,9 @@ public class TestBean {
 		return x;
 	}
 
+	public void drain(String x) {
+	}
+
 	public String[] array(String a, String b) {
 		return new String[] {a, b};
 	}

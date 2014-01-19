@@ -9,12 +9,11 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import static java.lang.String.format;
 
 
 /**
@@ -33,7 +32,6 @@ public class SpringBolt extends SpringComponent implements IRichBolt {
 
 	public SpringBolt(Class<?> beanType, String invocation, String... outputFields) {
 		super(beanType, invocation, outputFields);
-		logger.trace("{} constructed", this);
 	}
 
 	@Override
@@ -49,28 +47,34 @@ public class SpringBolt extends SpringComponent implements IRichBolt {
 	@Override
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
 		List<String> names = new ArrayList<>();
-		for (String f : outputFields) names.add(f);
+		for (String f : getOutputFields()) names.add(f);
 		for (String f : passThroughFields) names.add(f);
 		declarer.declare(new Fields(names));
 	}
 
 	@Override
 	public void execute(Tuple input) {
-		logger.debug(format("%s got tuple '%s'", this, input.getMessageId()));
+		logger.debug("{} got tuple '{}'", this, input.getMessageId());
 
 		try {
+			String[] inputFields = getInputFields();
 			Object[] arguments = new Object[inputFields.length];
 			for (int i = arguments.length; --i >= 0;
 				arguments[i] = input.getValueByField(inputFields[i]));
 
-			for (Values output : invoke(arguments)) {
+			Values[] entries = invoke(arguments);
+			String streamId = getOutputStreamId();
+			logger.debug("{} provides {} tuples to stream {}",
+					new Object[] {this, entries.length, streamId});
+
+			for (Values output : entries) {
 				for (String name : passThroughFields)
 					output.add(input.getValueByField(name));
 
 				if (doAnchor)
-					collector.emit(input, output);
+					collector.emit(streamId, input, output);
 				else
-					collector.emit(output);
+					collector.emit(streamId, output);
 			}
 
 			collector.ack(input);
@@ -106,7 +110,7 @@ public class SpringBolt extends SpringComponent implements IRichBolt {
 	 */
 	public void setPassThroughFields(String... value) {
 		for (String name : value)
-			for (String out : outputFields)
+			for (String out : getOutputFields())
 				if (name.equals(out))
 					throw new IllegalArgumentException(name + "' already defined as output field");
 		passThroughFields = value;

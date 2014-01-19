@@ -3,6 +3,7 @@ package eu.icolumbo.breeze.build;
 import eu.icolumbo.breeze.SpringBolt;
 import eu.icolumbo.breeze.SpringComponent;
 import eu.icolumbo.breeze.SpringSpout;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,7 +13,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -41,8 +41,6 @@ public class TopologyCompilation extends TreeMap<SpringSpout,List<SpringBolt>> i
 			public int compare(SpringComponent o1, SpringComponent o2) {
 				String id1 = o1.getId();
 				String id2 = o2.getId();
-				Objects.requireNonNull(id1, "Missing required component id");
-				Objects.requireNonNull(id2, "Missing required component id");
 				return id1.compareTo(id2);
 			}
 
@@ -56,6 +54,21 @@ public class TopologyCompilation extends TreeMap<SpringSpout,List<SpringBolt>> i
 
 	public void add(SpringBolt... values) {
 		addAll(unbound, values);
+	}
+
+	@Override
+	public void clear() {
+		super.clear();
+		unbound.clear();
+	}
+
+	/**
+	 * Checks whether {@link #run() the complitation} succeeded.
+	 */
+	public void verify() throws IllegalStateException {
+		if (unbound.isEmpty()) return;
+		String msg = "Can't resolve all input fields for: " + unbound;
+		throw new IllegalStateException(msg);
 	}
 
 	@Override
@@ -97,20 +110,6 @@ public class TopologyCompilation extends TreeMap<SpringSpout,List<SpringBolt>> i
 		}
 
 		logger.info("Compiled as: {}", this);
-	}
-
-	@Override
-	public void clear() {
-		super.clear();
-		unbound.clear();
-	}
-
-	/**
-	 * Checks whether {@link #run() the complitation} succeeded.
-	 */
-	public void verify() throws IllegalStateException {
-		if (unbound.isEmpty()) return;
-		throw new IllegalStateException("Can't resolve all input fields for: " + unbound);
 	}
 
 }

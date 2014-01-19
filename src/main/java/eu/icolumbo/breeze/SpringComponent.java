@@ -17,8 +17,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.StringTokenizer;
+import java.util.UUID;
 
 import static java.lang.String.format;
+import static backtype.storm.utils.Utils.DEFAULT_STREAM_ID;
 import static org.springframework.beans.BeanUtils.getPropertyDescriptor;
 
 
@@ -30,18 +32,19 @@ import static org.springframework.beans.BeanUtils.getPropertyDescriptor;
 public abstract class SpringComponent implements IComponent, ApplicationContextAware {
 
 	private static final Logger logger = LoggerFactory.getLogger(SpringSpout.class);
-	private static final long serialVersionUID = 1;
-	private static final Values[] EMPTY_ARRAY = new Values[0];
+	private static final long serialVersionUID = 2;
+	private static final Values[] EMPTY_ARRAY = {};
 
 	private final Class<?> beanType;
 	private final String methodName;
-	protected final String[] inputFields, outputFields;
+	private final String[] inputFields, outputFields;
 
 	private transient String id;
-	private transient Number parallelism;
+	private String outputStreamId;
+	private Number parallelism;
 
 	private transient ApplicationContext spring;
-	transient Method method;
+	private transient Method method;
 
 	private boolean scatterOutput;
 
@@ -73,7 +76,7 @@ public abstract class SpringComponent implements IComponent, ApplicationContextA
 	 * Instantiates the non-serializable state.
 	 */
 	protected void init(Map stormConf, TopologyContext topologyContext) {
-		id = topologyContext.getThisComponentId();
+		setId(topologyContext.getThisComponentId());
 		logger.debug("Prepare " + this);
 
 		try {
@@ -96,7 +99,7 @@ public abstract class SpringComponent implements IComponent, ApplicationContextA
 	 */
 	@Override
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		declarer.declare(new Fields(outputFields));
+		declarer.declareStream(getOutputStreamId(), new Fields(outputFields));
 	}
 
 	@Override
@@ -116,7 +119,7 @@ public abstract class SpringComponent implements IComponent, ApplicationContextA
 	public String toString() {
 		StringBuilder description = new StringBuilder();
 		description.append(getClass().getSimpleName());
-		description.append(" '").append(id).append('\'');
+		description.append(" '").append(getId()).append('\'');
 		return description.toString();
 	}
 
@@ -252,6 +255,10 @@ public abstract class SpringComponent implements IComponent, ApplicationContextA
 	 * Gets the Storm & Spring identifier.
 	 */
 	public String getId() {
+		if (id == null) {
+			setId(UUID.randomUUID().toString());
+			logger.warn("Generated ID for {}: {}", this, beanType);
+		}
 		return id;
 	}
 
@@ -260,6 +267,23 @@ public abstract class SpringComponent implements IComponent, ApplicationContextA
 	 */
 	public void setId(String value) {
 		id = value;
+	}
+
+	/**
+	 * Gets the Storm identifier.
+	 */
+	public String getOutputStreamId() {
+		if (outputStreamId == null)
+			setOutputStreamId(DEFAULT_STREAM_ID);
+		return outputStreamId;
+	}
+
+	/**
+	 * Sets the Storm identifier.
+	 */
+	public void setOutputStreamId(String value) {
+		logger.debug("{} output stream set to '{}'", this, outputStreamId);
+		outputStreamId = value;
 	}
 
 	/**

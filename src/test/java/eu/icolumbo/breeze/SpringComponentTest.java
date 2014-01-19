@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -49,13 +50,14 @@ public class SpringComponentTest {
 	@Test
 	public void output() {
 		SpringComponent subject = new SpringComponent(Collection.class, "toArray()", "a", "b", "c") {};
-		assertArrayEquals(new String[]{"a", "b", "c"}, subject.outputFields);
+		subject.setOutputStreamId("elements");
+		assertArrayEquals(new String[]{"a", "b", "c"}, subject.getOutputFields());
 
 		OutputFieldsDeclarer mock = mock(OutputFieldsDeclarer.class);
 		subject.declareOutputFields(mock);
 
 		ArgumentCaptor<Fields> captor = ArgumentCaptor.forClass(Fields.class);
-		verify(mock).declare(captor.capture());
+		verify(mock).declareStream(eq("elements"), captor.capture());
 		assertEquals(0, captor.getValue().fieldIndex("a"));
 		assertEquals(2, captor.getValue().fieldIndex("c"));
 	}

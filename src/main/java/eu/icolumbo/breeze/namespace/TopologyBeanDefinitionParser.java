@@ -3,8 +3,7 @@ package eu.icolumbo.breeze.namespace;
 import eu.icolumbo.breeze.SpringBolt;
 import eu.icolumbo.breeze.SpringSpout;
 import eu.icolumbo.breeze.build.TopologyFactoryBean;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
@@ -15,7 +14,6 @@ import org.springframework.beans.factory.xml.ParserContext;
 import org.w3c.dom.Element;
 
 import java.util.StringTokenizer;
-import java.util.UUID;
 
 import static org.springframework.util.StringUtils.hasText;
 import static org.springframework.util.xml.DomUtils.getChildElementsByTagName;
@@ -26,9 +24,6 @@ import static org.springframework.util.xml.DomUtils.getChildElementsByTagName;
  * @author Pascal S. de Kloe
  */
 public class TopologyBeanDefinitionParser extends AbstractBeanDefinitionParser {
-
-	private static final Logger logger = LoggerFactory.getLogger(TopologyBeanDefinitionParser.class);
-
 
 	@Override
 	protected AbstractBeanDefinition parseInternal(Element element, ParserContext context) {
@@ -59,18 +54,15 @@ public class TopologyBeanDefinitionParser extends AbstractBeanDefinitionParser {
 		builder.addConstructorArgValue(element.getAttribute("beanType"));
 		builder.addConstructorArgValue(element.getAttribute("signature"));
 		builder.addConstructorArgValue(tokenize(element.getAttribute("outputFields")));
-
 		builder.addPropertyValue("parallelism", Integer.valueOf(element.getAttribute("parallelism")));
 
-		String id = element.getAttribute(ID_ATTRIBUTE);
-		if (! hasText(id)) {
-			id = UUID.randomUUID().toString();
-			logger.warn("Generated id '{}' for {}", id, element.getTagName());
-		}
-		builder.addPropertyValue("id", id);
-
 		AbstractBeanDefinition definition = builder.getBeanDefinition();
-		registry.registerBeanDefinition(id, definition);
+
+		String id = element.getAttribute(ID_ATTRIBUTE);
+		if (hasText(id)) {
+			builder.addPropertyValue("id", id);
+			registry.registerBeanDefinition(id, definition);
+		}
 
 		return definition;
 	}

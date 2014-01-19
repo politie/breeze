@@ -21,6 +21,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.eq;
@@ -81,9 +82,10 @@ public class SpringBoltTest {
 
 		SpringBolt subject = new SpringBolt(TestBean.class, "echo(in)", "out");
 		subject.setDoAnchor(false);
+		subject.setOutputStreamId("drain");
 		run(subject);
 
-		verify(outputCollectorMock).emit(asList((Object) "Hello World!"));
+		verify(outputCollectorMock).emit("drain", asList((Object) "Hello World!"));
 		verify(outputCollectorMock).ack(tupleMock);
 	}
 
@@ -91,7 +93,8 @@ public class SpringBoltTest {
 	public void noInput() {
 		run(new SpringBolt(TestBean.class, "ping()", "out"));
 
-		verify(outputCollectorMock).emit(tupleMock, asList((Object) "ping"));
+		verify(outputCollectorMock).emit("default", tupleMock,
+				asList((Object) "ping"));
 		verify(outputCollectorMock).ack(tupleMock);
 	}
 
@@ -138,7 +141,8 @@ public class SpringBoltTest {
 		subject.execute(tupleMock);
 		subject.execute(tupleMock);
 		ArgumentCaptor<List> captor = ArgumentCaptor.forClass(List.class);
-		verify(outputCollectorMock, times(2)).emit(same(tupleMock), captor.capture());
+		verify(outputCollectorMock, times(2)).emit(eq("default"),
+				same(tupleMock), captor.capture());
 		assertNotEquals(captor.getAllValues().get(0), captor.getAllValues().get(1));
 	}
 
@@ -151,8 +155,10 @@ public class SpringBoltTest {
 		run(subject);
 
 		InOrder order = inOrder(outputCollectorMock);
-		order.verify(outputCollectorMock).emit(same(tupleMock), eq(asList((Object) "first")));
-		order.verify(outputCollectorMock).emit(same(tupleMock), eq(asList((Object) "second")));
+		order.verify(outputCollectorMock).emit(eq("default"), same(tupleMock),
+				eq(asList((Object) "first")));
+		order.verify(outputCollectorMock).emit(eq("default"), same(tupleMock),
+				eq(asList((Object) "second")));
 		order.verify(outputCollectorMock).ack(tupleMock);
 		verifyNoMoreInteractions(outputCollectorMock);
 	}
@@ -166,8 +172,8 @@ public class SpringBoltTest {
 		run(subject);
 
 		InOrder order = inOrder(outputCollectorMock);
-		order.verify(outputCollectorMock).emit(same(tupleMock), eq(asList((Object) "first")));
-		order.verify(outputCollectorMock).emit(same(tupleMock), eq(asList((Object) "second")));
+		order.verify(outputCollectorMock).emit(eq("default"), same(tupleMock), eq(asList((Object) "first")));
+		order.verify(outputCollectorMock).emit(eq("default"), same(tupleMock), eq(asList((Object) "second")));
 		order.verify(outputCollectorMock).ack(tupleMock);
 		verifyNoMoreInteractions(outputCollectorMock);
 	}
@@ -188,7 +194,8 @@ public class SpringBoltTest {
 		subject.setScatterOutput(true);
 		run(subject);
 
-		verify(outputCollectorMock).emit(same(tupleMock), eq(asList((Object) "ping")));
+		verify(outputCollectorMock).emit(eq("default"),
+				same(tupleMock), eq(asList((Object) "ping")));
 		verify(outputCollectorMock).ack(tupleMock);
 		verifyNoMoreInteractions(outputCollectorMock);
 	}
@@ -197,7 +204,8 @@ public class SpringBoltTest {
 	public void singleOutputNull() {
 		run(new SpringBolt(TestBean.class, "none()", "y"));
 
-		verify(outputCollectorMock).emit(same(tupleMock), eq(singletonList(null)));
+		verify(outputCollectorMock).emit(eq("default"), same(tupleMock),
+				eq(singletonList(null)));
 		verify(outputCollectorMock).ack(tupleMock);
 		verifyNoMoreInteractions(outputCollectorMock);
 	}
@@ -208,7 +216,8 @@ public class SpringBoltTest {
 		doReturn("second").when(tupleMock).getValueByField("b");
 		run(new SpringBolt(TestBean.class, "list(a, b)", "y"));
 
-		verify(outputCollectorMock).emit(same(tupleMock), eq(asList((Object) asList("first", "second"))));
+		verify(outputCollectorMock).emit(eq("default"), same(tupleMock),
+				eq(asList((Object) asList("first", "second"))));
 		verify(outputCollectorMock).ack(tupleMock);
 		verifyNoMoreInteractions(outputCollectorMock);
 	}
@@ -224,7 +233,8 @@ public class SpringBoltTest {
 		verify(outputFieldsDeclarerMock).declare(fieldsCaptor.capture());
 		assertEquals(asList("ack", "timer", "sensor"), fieldsCaptor.getValue().toList());
 
-		verify(outputCollectorMock).emit(same(tupleMock), eq(asList((Object) "ping", null, "ear")));
+		verify(outputCollectorMock).emit(eq("default"), same(tupleMock),
+				eq(asList((Object) "ping", null, "ear")));
 		verify(outputCollectorMock).ack(tupleMock);
 		verifyNoMoreInteractions(outputCollectorMock);
 	}
@@ -235,7 +245,8 @@ public class SpringBoltTest {
 		doReturn("double").when(tupleMock).getValueByField("b");
 		run(new SpringBolt(TestBean.class, "map(a, b)", "x", "y", "z"));
 
-		verify(outputCollectorMock).emit(same(tupleMock), eq(asList((Object) "check", "double", null)));
+		verify(outputCollectorMock).emit(eq("default"), same(tupleMock),
+				eq(asList((Object) "check", "double", null)));
 		verify(outputCollectorMock).ack(tupleMock);
 		verifyNoMoreInteractions(outputCollectorMock);
 	}
@@ -253,7 +264,8 @@ public class SpringBoltTest {
 		verify(outputFieldsDeclarerMock).declare(fieldsCaptor.capture());
 		assertEquals(asList("x", "y", "c"), fieldsCaptor.getValue().toList());
 
-		verify(outputCollectorMock).emit(same(tupleMock), eq(asList((Object) "check", "double", "again")));
+		verify(outputCollectorMock).emit(eq("default"), same(tupleMock),
+				eq(asList((Object) "check", "double", "again")));
 		verify(outputCollectorMock).ack(tupleMock);
 		verifyNoMoreInteractions(outputCollectorMock);
 	}
@@ -262,7 +274,8 @@ public class SpringBoltTest {
 	public void multipleOutputNull() {
 		run(new SpringBolt(TestBean.class, "none()", "x", "y", "z"));
 
-		verify(outputCollectorMock).emit(same(tupleMock), eq(asList(null, null, null)));
+		verify(outputCollectorMock).emit(eq("default"),
+				same(tupleMock), eq(asList(null, null, null)));
 		verify(outputCollectorMock).ack(tupleMock);
 		verifyNoMoreInteractions(outputCollectorMock);
 	}

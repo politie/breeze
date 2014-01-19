@@ -6,10 +6,9 @@ import backtype.storm.topology.IRichSpout;
 import backtype.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
-
-import static java.lang.String.format;
 
 
 /**
@@ -26,7 +25,6 @@ public class SpringSpout extends SpringComponent implements IRichSpout {
 
 	public SpringSpout(Class<?> beanType, String invocation, String... outputFields) {
 		super(beanType, invocation, outputFields);
-		logger.trace("{} constructed", this);
 	}
 
 	@Override
@@ -39,9 +37,12 @@ public class SpringSpout extends SpringComponent implements IRichSpout {
 	public void nextTuple() {
 		try {
 			Values[] entries = invoke();
-			logger.debug(format("%s got %d tuples", this, entries.length));
+			String streamId = getOutputStreamId();
+			logger.debug("{} provides {} tuples to stream {}",
+					new Object[] {this, entries.length, streamId});
+
 			for (Values output : entries)
-				collector.emit(output);
+				collector.emit(streamId, output);
 		} catch (InvocationTargetException e) {
 			collector.reportError(e.getCause());
 		}

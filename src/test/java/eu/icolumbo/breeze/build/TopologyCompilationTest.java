@@ -35,6 +35,7 @@ public class TopologyCompilationTest {
 		public Map f() {return null;}
 		public Map f(Object a) {return null;}
 		public Map f(Object a, Object b) {return null;}
+		public void g(Object a) {}
 	}
 
 
@@ -97,6 +98,17 @@ public class TopologyCompilationTest {
 	}
 
 	@Test
+	public void voidPassThrough() {
+		subject.add(spout("s1", "f()", "y"));
+		subject.add(bolt("b1", "g(y)"));
+		subject.add(bolt("b2", "g(y)"));
+
+		assertPipeline("s1", "b1", "b2");
+		assertPassThrough("b1", "y");
+		assertPassThrough("b2");
+	}
+
+	@Test
 	public void incomplete() {
 		subject.add(spout("s1", "f()", "feed"));
 		subject.add(bolt("b1", "f(b)", "z"));
@@ -108,17 +120,6 @@ public class TopologyCompilationTest {
 		} catch (IllegalStateException e) {
 			String expected = "Can't resolve all input fields for: [SpringBolt 'b1']";
 			assertEquals(expected, e.getMessage());
-		}
-	}
-
-	@Test
-	public void missingIds() {
-		try {
-			SpringSpout spout = mock(SpringSpout.class);
-			subject.put(spout, EMPTY_LIST);
-			fail("no exception");
-		} catch (RuntimeException e) {
-			assertEquals("Missing required component id", e.getMessage());
 		}
 	}
 
