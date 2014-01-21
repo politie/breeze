@@ -5,6 +5,7 @@ import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
+import backtype.storm.tuple.Values;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -99,10 +100,19 @@ public class SpringBoltTest {
 	}
 
 	@Test
-	public void noOutput() {
+	public void voidOutput() {
 		SpringBolt subject = new SpringBolt(TestBean.class, "nop()");
 		run(subject);
 		verify(outputCollectorMock).ack(tupleMock);
+	}
+
+	@Test
+	public void voidPassThrough() {
+		SpringBolt subject = new SpringBolt(TestBean.class, "nop()");
+		subject.setPassThroughFields("n");
+		doReturn(4).when(tupleMock).getValueByField("n");
+		run(subject);
+		verify(outputCollectorMock).emit("default", tupleMock, new Values(4));
 	}
 
 	@Test

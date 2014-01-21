@@ -294,6 +294,14 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 	}
 
 	/**
+	 * Gets whether items in collection and array returns
+	 * should be emitted as individual output tuples.
+	 */
+	public boolean getScatterOutput() {
+		return scatterOutput;
+	}
+
+	/**
 	 * Sets whether items in collection and array returns
 	 * should be emitted as individual output tuples.
 	 */
