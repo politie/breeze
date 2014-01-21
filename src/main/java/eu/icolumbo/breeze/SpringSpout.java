@@ -2,7 +2,6 @@ package eu.icolumbo.breeze;
 
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.IRichSpout;
 import backtype.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,7 +15,7 @@ import java.util.Map;
  * @author Jethro Bakker
  * @author Pascal S. de Kloe
  */
-public class SpringSpout extends SpringComponent implements IRichSpout {
+public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 
 	private static final Logger logger = LoggerFactory.getLogger(SpringSpout.class);
 

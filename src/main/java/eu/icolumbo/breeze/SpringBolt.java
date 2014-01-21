@@ -2,7 +2,6 @@ package eu.icolumbo.breeze;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
@@ -20,7 +19,7 @@ import java.util.Map;
  * Spring for Storm bolts.
  * @author Pascal S. de Kloe
  */
-public class SpringBolt extends SpringComponent implements IRichBolt {
+public class SpringBolt extends SpringComponent implements ConfiguredBolt {
 
 	private static final Logger logger = LoggerFactory.getLogger(SpringBolt.class);
 
@@ -96,18 +95,12 @@ public class SpringBolt extends SpringComponent implements IRichBolt {
 		doAnchor = value;
 	}
 
-	/**
-	 * Gets the field names which should be copied from the input tuple in addition to
-	 * the {@link #getOutputFields() output fields}.
-	 */
+	@Override
 	public String[] getPassThroughFields() {
 		return passThroughFields;
 	}
 
-	/**
-	 * Gets the field names which should be copied from the input tuple in addition to
-	 * the {@link #getOutputFields() output fields}.
-	 */
+	@Override
 	public void setPassThroughFields(String... value) {
 		for (String name : value)
 			for (String out : getOutputFields())

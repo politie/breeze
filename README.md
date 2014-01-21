@@ -70,6 +70,25 @@ The default topology starter can be used for local testing.
 ```
 
 
+RPC
+===
+
+Storm's [Distributed RPC or DRPC](https://github.com/nathanmarz/storm/wiki/Distributed-RPC) can be configured with the beans XML extension.
+
+```xml
+<breeze:topology id="demo">
+	<breeze:rpc signature="dgreet(s)" outputFields="greeting"/>
+	<breeze:bolt beanType="com.example.Greeter" signature="greet(s)" outputFields="greeting"/>
+</breeze:topology>
+```
+
+```java
+DRPCClient client = new DRPCClient("storm1.example.com", 3772);
+String result = client.execute("dgreet", "World");
+System.err.println(result);
+```
+
+
 Contributors
 ============
 

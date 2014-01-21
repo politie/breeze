@@ -1,6 +1,8 @@
 package eu.icolumbo.breeze.namespace;
 
 import eu.icolumbo.breeze.SpringBolt;
+import eu.icolumbo.breeze.connect.SpringRPCRequest;
+import eu.icolumbo.breeze.connect.SpringRPCResponse;
 import eu.icolumbo.breeze.SpringSpout;
 import eu.icolumbo.breeze.build.TopologyFactoryBean;
 
@@ -29,17 +31,32 @@ public class TopologyBeanDefinitionParser extends AbstractBeanDefinitionParser {
 	protected AbstractBeanDefinition parseInternal(Element element, ParserContext context) {
 		BeanDefinitionRegistry registry = context.getRegistry();
 
-		ManagedList <BeanDefinition> spoutDefinitions = new ManagedList<>();
+		ManagedList<BeanDefinition> spoutDefinitions = new ManagedList<>();
 		for (Element spoutElement : getChildElementsByTagName(element, "spout")) {
 			BeanDefinitionBuilder builder = BeanDefinitionBuilder.rootBeanDefinition(SpringSpout.class);
 			spoutDefinitions.add(define(builder, spoutElement, registry));
 		}
 
-		ManagedList <BeanDefinition> boltDefinitions = new ManagedList<>();
+		ManagedList<BeanDefinition> boltDefinitions = new ManagedList<>();
 		for (Element boltElement : getChildElementsByTagName(element, "bolt")) {
 			BeanDefinitionBuilder builder = BeanDefinitionBuilder.rootBeanDefinition(SpringBolt.class);
 			builder.addPropertyValue("doAnchor", Boolean.valueOf(element.getAttribute("anchor")));
 			boltDefinitions.add(define(builder, boltElement, registry));
+		}
+
+		for (Element rpcElement : getChildElementsByTagName(element, "rpc")) {
+			BeanDefinitionBuilder spoutDefinitionBuilder = BeanDefinitionBuilder.rootBeanDefinition(SpringRPCRequest.class);
+			spoutDefinitionBuilder.setScope("prototype");
+			spoutDefinitionBuilder.addConstructorArgValue(rpcElement.getAttribute("signature"));
+			spoutDefinitionBuilder.addPropertyValue("parallelism", Integer.valueOf(rpcElement.getAttribute("parallelism")));
+			spoutDefinitions.add(spoutDefinitionBuilder.getBeanDefinition());
+
+			BeanDefinitionBuilder boltDefinitionBuilder = BeanDefinitionBuilder.rootBeanDefinition(SpringRPCResponse.class);
+			boltDefinitionBuilder.setScope("prototype");
+			boltDefinitionBuilder.addConstructorArgValue(rpcElement.getAttribute("signature"));
+			boltDefinitionBuilder.addConstructorArgValue(tokenize(rpcElement.getAttribute("outputFields")));
+			boltDefinitionBuilder.addPropertyValue("parallelism", Integer.valueOf(rpcElement.getAttribute("parallelism")));
+			boltDefinitions.add(boltDefinitionBuilder.getBeanDefinition());
 		}
 
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder.rootBeanDefinition(TopologyFactoryBean.class);

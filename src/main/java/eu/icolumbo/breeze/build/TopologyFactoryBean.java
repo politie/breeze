@@ -1,10 +1,11 @@
 package eu.icolumbo.breeze.build;
 
+import eu.icolumbo.breeze.ConfiguredBolt;
+import eu.icolumbo.breeze.ConfiguredSpout;
+
 import backtype.storm.generated.StormTopology;
 import backtype.storm.topology.BoltDeclarer;
 import backtype.storm.topology.TopologyBuilder;
-import eu.icolumbo.breeze.SpringBolt;
-import eu.icolumbo.breeze.SpringSpout;
 import org.springframework.beans.factory.FactoryBean;
 
 import java.util.List;
@@ -19,13 +20,13 @@ public class TopologyFactoryBean extends TopologyCompilation implements FactoryB
 	private StormTopology singleton;
 
 
-	public void setSpouts(List<SpringSpout> value) {
-		for (SpringSpout spout : value)
+	public void setSpouts(List<ConfiguredSpout> value) {
+		for (ConfiguredSpout spout : value)
 			add(spout);
 	}
 
-	public void setBolts(List<SpringBolt> value) {
-		for (SpringBolt bolt : value)
+	public void setBolts(List<ConfiguredBolt> value) {
+		for (ConfiguredBolt bolt : value)
 			add(bolt);
 	}
 
@@ -51,12 +52,12 @@ public class TopologyFactoryBean extends TopologyCompilation implements FactoryB
 		verify();
 
 		TopologyBuilder builder = new TopologyBuilder();
-		for (Map.Entry<SpringSpout,List<SpringBolt>> line : entrySet()) {
-			SpringSpout spout = line.getKey();
+		for (Map.Entry<ConfiguredSpout,List<ConfiguredBolt>> line : entrySet()) {
+			ConfiguredSpout spout = line.getKey();
 			String lastId = spout.getId();
 			String streamId = spout.getOutputStreamId();
 			builder.setSpout(lastId, spout, spout.getParallelism());
-			for (SpringBolt bolt : line.getValue()) {
+			for (ConfiguredBolt bolt : line.getValue()) {
 				String id = bolt.getId();
 				BoltDeclarer declarer = builder.setBolt(id, bolt, bolt.getParallelism());
 				declarer.noneGrouping(lastId, streamId);

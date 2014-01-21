@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<xs:schema elementFormDefault="qualified" attributeFormDefault="unqualified"
+		targetNamespace="http://www.icolumbo.eu/2013/breeze"
+		xmlns="http://www.icolumbo.eu/2013/breeze"
+		xmlns:beans="http://www.springframework.org/schema/beans"
+		xmlns:xs="http://www.w3.org/2001/XMLSchema"
+		xmlns:tool="http://www.springframework.org/schema/tool">
+
+	<xs:annotation>
+		<xs:documentation>
+			Spring beans XML extension for Storm topologies.
+		</xs:documentation>
+	</xs:annotation>
+
+	<xs:import namespace="http://www.springframework.org/schema/beans"/>
+	<xs:import namespace="http://www.springframework.org/schema/tool"/>
+
+	<xs:element name="topology" type="topology_t"/>
+
+	<xs:complexType name="topology_t">
+		<xs:complexContent>
+			<xs:extension base="beans:identifiedType">
+				<xs:sequence maxOccurs="unbounded">
+					<xs:choice>
+						<xs:element name="spout" type="spout_t"/>
+						<xs:element name="rpc" type="rpc_t"/>
+					</xs:choice>
+					<xs:element name="bolt" type="bolt_t" minOccurs="0" maxOccurs="unbounded"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="spout_t">
+		<xs:complexContent>
+			<xs:extension base="component_t"/>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="bolt_t">
+		<xs:complexContent>
+			<xs:extension base="component_t">
+				<xs:attribute name="anchor" type="xs:boolean" default="true"/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="component_t" abstract="true">
+		<xs:complexContent>
+			<xs:extension base="beans:identifiedType">
+				<xs:attribute name="beanType" type="xs:string" use="required">
+					<xs:annotation>
+						<xs:documentation source="java:java.lang.Class">
+							The fully qualified name of the bean's class.
+						</xs:documentation>
+						<xs:appinfo>
+							<tool:annotation kind="direct">
+								<tool:expected-type type="java.lang.Class"/>
+							</tool:annotation>
+						</xs:appinfo>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attributeGroup ref="functionAttributes"/>
+				<xs:attribute name="scatterOutput" type="xs:boolean" default="false"/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="rpc_t">
+		<xs:attributeGroup ref="functionAttributes"/>
+	</xs:complexType>
+
+	<xs:attributeGroup name="functionAttributes">
+		<xs:attribute name="signature" type="xs:string" use="required"/>
+		<xs:attribute name="outputFields" type="xs:NMTOKENS"/>
+		<xs:attribute name="parallelism" type="xs:positiveInteger" default="1"/>
+	</xs:attributeGroup>
+
+</xs:schema>

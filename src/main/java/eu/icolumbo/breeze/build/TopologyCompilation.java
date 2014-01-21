@@ -1,8 +1,7 @@
 package eu.icolumbo.breeze.build;
 
-import eu.icolumbo.breeze.SpringBolt;
-import eu.icolumbo.breeze.SpringComponent;
-import eu.icolumbo.breeze.SpringSpout;
+import eu.icolumbo.breeze.ConfiguredBolt;
+import eu.icolumbo.breeze.ConfiguredSpout;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,21 +23,21 @@ import static java.util.Collections.addAll;
  * Performs dependency calculation.
  * @author Pascal S. de Kloe
  */
-public class TopologyCompilation extends TreeMap<SpringSpout,List<SpringBolt>> implements Runnable {
+public class TopologyCompilation extends TreeMap<ConfiguredSpout,List<ConfiguredBolt>> implements Runnable {
 
 	private static final Logger logger = LoggerFactory.getLogger(TopologyCompilation.class);
 
-	private final List<SpringBolt> unbound = new ArrayList<>();
+	private final List<ConfiguredBolt> unbound = new ArrayList<>();
 
 
 	/**
 	 * Default constructor.
 	 */
 	public TopologyCompilation() {
-		super(new Comparator<SpringComponent>() {
+		super(new Comparator<ConfiguredSpout>() {
 
 			@Override
-			public int compare(SpringComponent o1, SpringComponent o2) {
+			public int compare(ConfiguredSpout o1, ConfiguredSpout o2) {
 				String id1 = o1.getId();
 				String id2 = o2.getId();
 				return id1.compareTo(id2);
@@ -47,12 +46,12 @@ public class TopologyCompilation extends TreeMap<SpringSpout,List<SpringBolt>> i
 		});
 	}
 
-	public void add(SpringSpout... values) {
-		for (SpringSpout spout : values)
-			put(spout, new ArrayList<SpringBolt>());
+	public void add(ConfiguredSpout... values) {
+		for (ConfiguredSpout x : values)
+			put(x, new ArrayList<ConfiguredBolt>());
 	}
 
-	public void add(SpringBolt... values) {
+	public void add(ConfiguredBolt... values) {
 		addAll(unbound, values);
 	}
 
@@ -74,16 +73,16 @@ public class TopologyCompilation extends TreeMap<SpringSpout,List<SpringBolt>> i
 	@Override
 	public void run() {
 		logger.debug("Matching {} spouts with {} bolts", size(), unbound.size());
-		for (Map.Entry<SpringSpout,List<SpringBolt>> line : entrySet()) {
+		for (Map.Entry<ConfiguredSpout,List<ConfiguredBolt>> line : entrySet()) {
 			Set<String> availableFields = new HashSet<>();
 			addAll(availableFields, line.getKey().getOutputFields());
 
-			List<SpringBolt> options = new ArrayList<>(unbound);
+			List<ConfiguredBolt> options = new ArrayList<>(unbound);
 			for (boolean collected = true; collected; ) {
 				collected = false;
-				Iterator<SpringBolt> todo = options.iterator();
+				Iterator<ConfiguredBolt> todo = options.iterator();
 				while (todo.hasNext()) {
-					SpringBolt option = todo.next();
+					ConfiguredBolt option = todo.next();
 					logger.trace("Trying {} for {}", option, line.getKey());
 					if (availableFields.containsAll(asList(option.getInputFields()))) {
 						line.getValue().add(option);
@@ -97,12 +96,12 @@ public class TopologyCompilation extends TreeMap<SpringSpout,List<SpringBolt>> i
 			logger.debug("Found {} bolts for {}", line.getValue().size(), line.getKey());
 		}
 
-		for (List<SpringBolt> processed: values()) {
+		for (List<ConfiguredBolt> processed: values()) {
 			unbound.removeAll(processed);
 
 			Set<String> requiredFields = new HashSet<>();
 			for (int i = processed.size(); --i >= 0; ) {
-				SpringBolt bolt = processed.get(i);
+				ConfiguredBolt bolt = processed.get(i);
 				requiredFields.removeAll(asList(bolt.getOutputFields()));
 				bolt.setPassThroughFields(requiredFields.toArray(new String[requiredFields.size()]));
 				addAll(requiredFields, bolt.getInputFields());

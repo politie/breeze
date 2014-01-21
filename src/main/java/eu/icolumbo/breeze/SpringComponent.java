@@ -1,7 +1,6 @@
 package eu.icolumbo.breeze;
 
 import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.IComponent;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
@@ -16,7 +15,6 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
-import java.util.StringTokenizer;
 import java.util.UUID;
 
 import static java.lang.String.format;
@@ -29,7 +27,7 @@ import static org.springframework.beans.BeanUtils.getPropertyDescriptor;
  * @author Pascal S. de Kloe
  * @author Jethro Bakker
  */
-public abstract class SpringComponent implements IComponent, ApplicationContextAware {
+public abstract class SpringComponent implements ConfiguredComponent, ApplicationContextAware {
 
 	private static final Logger logger = LoggerFactory.getLogger(SpringSpout.class);
 	private static final long serialVersionUID = 2;
@@ -59,17 +57,9 @@ public abstract class SpringComponent implements IComponent, ApplicationContextA
 		this.beanType = beanType;
 		this.outputFields = outputFields;
 
-		int paramStart = invocation.indexOf("(");
-		int paramEnd = invocation.indexOf(")");
-		if (paramStart < 0 || paramEnd != invocation.length() - 1)
-			throw new IllegalArgumentException("Malformed method signature: " + invocation);
-		this.methodName = invocation.substring(0, paramStart);
-		String arguments = invocation.substring(paramStart + 1, paramEnd);
-
-		StringTokenizer tokenizer = new StringTokenizer(arguments, ", ");
-		this.inputFields = new String[tokenizer.countTokens()];
-		for (int i = 0; tokenizer.hasMoreTokens();
-			 this.inputFields[i++] = tokenizer.nextToken());
+		FunctionSignature signature = FunctionSignature.valueOf(invocation);
+		this.methodName = signature.getFunction();
+		this.inputFields = signature.getArguments();
 	}
 
 	/**
@@ -112,9 +102,6 @@ public abstract class SpringComponent implements IComponent, ApplicationContextA
 		spring = value;
 	}
 
-	/**
-	 * Gets an informal description for messaging purposes.
-	 */
 	@Override
 	public String toString() {
 		StringBuilder description = new StringBuilder();
@@ -251,9 +238,7 @@ public abstract class SpringComponent implements IComponent, ApplicationContextA
 		return new ReflectiveOperationException(msg);
 	}
 
-	/**
-	 * Gets the Storm & Spring identifier.
-	 */
+	@Override
 	public String getId() {
 		if (id == null) {
 			setId(UUID.randomUUID().toString());
@@ -269,9 +254,7 @@ public abstract class SpringComponent implements IComponent, ApplicationContextA
 		id = value;
 	}
 
-	/**
-	 * Gets the Storm identifier.
-	 */
+	@Override
 	public String getOutputStreamId() {
 		if (outputStreamId == null)
 			setOutputStreamId(DEFAULT_STREAM_ID);
@@ -286,9 +269,7 @@ public abstract class SpringComponent implements IComponent, ApplicationContextA
 		outputStreamId = value;
 	}
 
-	/**
-	 * Gets the Strom parallelism hint.
-	 */
+	@Override
 	public Number getParallelism() {
 		return parallelism;
 	}
@@ -307,9 +288,7 @@ public abstract class SpringComponent implements IComponent, ApplicationContextA
 		return inputFields;
 	}
 
-	/**
-	 * Gets the field names.
-	 */
+	@Override
 	public String[] getOutputFields() {
 		return outputFields;
 	}

@@ -3,7 +3,6 @@ package eu.icolumbo.breeze.namespace;
 import eu.icolumbo.breeze.SpringBolt;
 import eu.icolumbo.breeze.SpringSpout;
 
-import backtype.storm.LocalCluster;
 import backtype.storm.generated.Bolt;
 import backtype.storm.generated.GlobalStreamId;
 import backtype.storm.generated.Grouping;
@@ -16,7 +15,6 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 
 import java.nio.charset.Charset;
-import java.util.Collections;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
@@ -81,6 +79,20 @@ public class BeanDefinitionTest extends AbstractXmlApplicationContext {
 	}
 
 	@Test
+	public void rpc() throws Exception {
+		beansXml = "<breeze:topology id='t1'>" +
+				"<breeze:rpc signature='fn(feed)' outputFields='result'/>" +
+				"<breeze:bolt id='b1' beanType='eu.icolumbo.breeze.TestBean' signature='echo(feed)' outputFields='replay'/>" +
+				"<breeze:bolt id='b2' beanType='eu.icolumbo.breeze.TestBean' signature='echo(replay)' outputFields='result'/>" +
+				"</breeze:topology>";
+		refresh();
+
+		StormTopology topology = getBean("t1", StormTopology.class);
+		assertEquals("spout count", 1, topology.get_spouts_size());
+		assertEquals("bolt count", 3, topology.get_bolts_size());
+	}
+
+	@Test
 	public void brokenWithUnboundBolt() throws Exception {
 		beansXml = "<breeze:topology id='t1'>" +
 				"<breeze:spout id='s1' beanType='eu.icolumbo.breeze.TestBean' signature='ping()' outputFields='feed'/>" +
@@ -109,7 +121,7 @@ public class BeanDefinitionTest extends AbstractXmlApplicationContext {
 				"  http://www.springframework.org/schema/beans" +
 				"  http://www.springframework.org/schema/beans/spring-beans.xsd" +
 				"  http://www.icolumbo.eu/2013/breeze" +
-				"  http://www.icolumbo.eu/2013/breeze-1.0.xsd" +
+				"  http://www.icolumbo.eu/2013/breeze.xsd" +
 				" '>";
 		xml += beansXml;
 		xml += "</beans>";

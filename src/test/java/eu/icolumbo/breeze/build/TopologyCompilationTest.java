@@ -1,5 +1,7 @@
 package eu.icolumbo.breeze.build;
 
+import eu.icolumbo.breeze.ConfiguredBolt;
+import eu.icolumbo.breeze.ConfiguredSpout;
 import eu.icolumbo.breeze.SpringBolt;
 import eu.icolumbo.breeze.SpringSpout;
 
@@ -13,13 +15,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static java.util.Arrays.sort;
-import static java.util.Collections.EMPTY_LIST;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
 
 
 /**
@@ -128,9 +126,9 @@ public class TopologyCompilationTest {
 		subject.verify();
 
 		String spoutId = expectedIdSequence[0];
-		SpringSpout spout = spoutById(spoutId);
+		ConfiguredSpout spout = spoutById(spoutId);
 
-		List<SpringBolt> bolts = subject.get(spout);
+		List<ConfiguredBolt> bolts = subject.get(spout);
 		int boltCount = bolts.size();
 
 		String[] actualIdSequence = new String[boltCount + 1];
@@ -144,7 +142,7 @@ public class TopologyCompilationTest {
 	}
 
 	private void assertPassThrough(String boltId, String... fieldNames) {
-		SpringBolt bolt = boltById(boltId);
+		ConfiguredBolt bolt = boltById(boltId);
 
 		Set<String> expected = new HashSet<>();
 		Set<String> actual = new HashSet<>();
@@ -153,9 +151,9 @@ public class TopologyCompilationTest {
 		assertEquals("field names", expected, actual);
 	}
 
-	private SpringSpout spoutById(String id) {
-		Set<SpringSpout> availableSpouts = subject.keySet();
-		for (SpringSpout key : availableSpouts)
+	private ConfiguredSpout spoutById(String id) {
+		Set<ConfiguredSpout> availableSpouts = subject.keySet();
+		for (ConfiguredSpout key : availableSpouts)
 			if (id.equals(key.getId()))
 				return key;
 
@@ -163,10 +161,10 @@ public class TopologyCompilationTest {
 		return null;
 	}
 
-	private SpringBolt boltById(String id) {
-		Collection<List<SpringBolt>> availableBolts = subject.values();
-		for (List<SpringBolt> boltSequence : availableBolts)
-			for (SpringBolt entry : boltSequence)
+	private ConfiguredBolt boltById(String id) {
+		Collection<List<ConfiguredBolt>> availableBolts = subject.values();
+		for (List<ConfiguredBolt> boltSequence : availableBolts)
+			for (ConfiguredBolt entry : boltSequence)
 				if (id.equals(entry.getId()))
 					return entry;
 
