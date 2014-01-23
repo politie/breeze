@@ -265,7 +265,7 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 	 * Sets the Storm identifier.
 	 */
 	public void setOutputStreamId(String value) {
-		logger.debug("{} output stream set to '{}'", this, outputStreamId);
+		logger.debug("{} output stream set to '{}'", this, value);
 		outputStreamId = value;
 	}
 
