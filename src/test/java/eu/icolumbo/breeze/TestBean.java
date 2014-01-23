@@ -1,5 +1,6 @@
 package eu.icolumbo.breeze;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,10 +43,6 @@ public class TestBean {
 	public void nop() {
 	}
 
-	public String none() {
-		return null;
-	}
-
 	public String ping() {
 		return "ping";
 	}
@@ -54,14 +51,11 @@ public class TestBean {
 		return x;
 	}
 
-	public void drain(String x) {
-	}
-
 	public String[] array(String a, String b) {
 		return new String[] {a, b};
 	}
 
-	public List<String> list(String a, String b) {
+	public List<Object> list(Object a, Object b) {
 		return asList(a, b);
 	}
 
@@ -77,6 +71,14 @@ public class TestBean {
 		data.setId(number.toString());
 		data.setMessage("Hello " + number);
 		return data;
+	}
+
+	public Data nullObject() {
+		return null;
+	}
+
+	public Data[] nullArray() {
+		return null;
 	}
 
 }

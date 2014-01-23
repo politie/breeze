@@ -48,7 +48,7 @@ public class SpringBolt extends SpringComponent implements ConfiguredBolt {
 		List<String> names = new ArrayList<>();
 		for (String f : getOutputFields()) names.add(f);
 		for (String f : passThroughFields) names.add(f);
-		declarer.declare(new Fields(names));
+		declarer.declareStream(getOutputStreamId(), new Fields(names));
 	}
 
 	@Override
