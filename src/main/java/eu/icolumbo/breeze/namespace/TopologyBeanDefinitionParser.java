@@ -72,6 +72,7 @@ public class TopologyBeanDefinitionParser extends AbstractBeanDefinitionParser {
 		builder.addConstructorArgValue(element.getAttribute("signature"));
 		builder.addConstructorArgValue(tokenize(element.getAttribute("outputFields")));
 		builder.addPropertyValue("parallelism", Integer.valueOf(element.getAttribute("parallelism")));
+		builder.addPropertyValue("scatterOutput", Boolean.valueOf(element.getAttribute("scatterOutput")));
 
 		AbstractBeanDefinition definition = builder.getBeanDefinition();
 

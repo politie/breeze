@@ -37,7 +37,7 @@ public class BeanDefinitionTest extends AbstractXmlApplicationContext {
 	public void build() throws Exception {
 		beansXml = "<breeze:topology id='t1'>" +
 				"<breeze:spout id='s1' beanType='eu.icolumbo.breeze.TestBean' signature='ping()' outputFields='feed'/>" +
-				"<breeze:bolt id='b1' beanType='eu.icolumbo.breeze.TestBean' signature='echo(feed)' outputFields='replay'/>" +
+				"<breeze:bolt id='b1' beanType='eu.icolumbo.breeze.TestBean' signature='echo(feed)' outputFields='replay' scatterOutput='true'/>" +
 				"<breeze:bolt beanType='eu.icolumbo.breeze.TestBean' signature='drain(replay)' parallelism='2'/>" +
 				"</breeze:topology>";
 		refresh();
@@ -48,8 +48,10 @@ public class BeanDefinitionTest extends AbstractXmlApplicationContext {
 
 		SpringSpout spout = getBean("s1", SpringSpout.class);
 		assertEquals("spout ID", "s1", spout.getId());
+		assertEquals("spout scatter", false, spout.getScatterOutput());
 		SpringBolt bolt = getBean("b1", SpringBolt.class);
 		assertEquals("bolt ID", "b1", bolt.getId());
+		assertEquals("bolt scatter", true, bolt.getScatterOutput());
 
 		Map<String, SpoutSpec> topologySpouts = topology.get_spouts();
 		SpoutSpec spoutSpec = topologySpouts.get("s1");
