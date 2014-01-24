@@ -62,17 +62,22 @@ public class SpringBolt extends SpringComponent implements ConfiguredBolt {
 				arguments[i] = input.getValueByField(inputFields[i]));
 
 			Values[] entries = invoke(arguments);
+			logger.trace("Got {} results", entries.length);
+
+			if (entries.length == 0 && passThroughFields.length != 0 && ! getScatterOutput()) {
+				logger.trace("Pass through only");
+				entries = new Values[] {new Values()};
+			}
+
 			String streamId = getOutputStreamId();
 			logger.debug("{} provides {} tuples to stream {}",
 					new Object[] {this, entries.length, streamId});
-
-			if (entries.length == 0 && passThroughFields.length != 0 && ! getScatterOutput())
-				entries = new Values[] {new Values()};
 
 			for (Values output : entries) {
 				for (String name : passThroughFields)
 					output.add(input.getValueByField(name));
 
+				logger.trace("Tuple emit");
 				if (doAnchor)
 					collector.emit(streamId, input, output);
 				else

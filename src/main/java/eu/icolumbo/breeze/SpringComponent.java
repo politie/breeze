@@ -115,17 +115,21 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 	 */
 	protected Values[] invoke(Object... arguments)
 	throws InvocationTargetException {
-		Object[] returnEntries;
 		try {
 			Object bean = spring.getBean(beanType);
+			logger.trace("Invoking {} on {}", method, bean);
 			Object returnValue = method.invoke(bean, arguments);
 
 			if (outputFields.length == 0) return EMPTY_ARRAY;
 
-			if (scatterOutput)
+			Object[] returnEntries;
+			if (scatterOutput) {
 				returnEntries = scatter(returnValue);
-			else
+				logger.trace("Scattered {} into {} parts", returnValue, returnEntries.length);
+			} else {
 				returnEntries = new Object[] {returnValue};
+				logger.trace("Using return {}", returnValue);
+			}
 
 			int i = returnEntries.length;
 			Values[] mapping = new Values[i];
