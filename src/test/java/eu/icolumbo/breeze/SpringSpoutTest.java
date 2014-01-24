@@ -2,11 +2,9 @@ package eu.icolumbo.breeze;
 
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.tuple.Fields;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
@@ -14,9 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -39,12 +35,17 @@ public class SpringSpoutTest {
 	Map<String,Object> stormConf = new HashMap<>();
 
 
+	@Before
+	public void setup() {
+		stormConf.clear();
+		stormConf.put("topology.name", "simple");
+	}
+
 	@Test
 	public void happyFlow() throws Exception {
 		SpringSpout subject = new SpringSpout(TestBean.class, "ping()", "out");
 		subject.setOutputStreamId("ether");
 
-		stormConf.put("topology.name", "topology");
 		subject.open(stormConf, contextMock, collectorMock);
 		subject.nextTuple();
 
@@ -53,9 +54,8 @@ public class SpringSpoutTest {
 
 	@Test
 	public void error() throws Exception {
-		stormConf.put("topology.name", "topology");
-
 		SpringSpout subject = new SpringSpout(TestBean.class, "clone()", "copy");
+
 		subject.open(stormConf, contextMock, collectorMock);
 		subject.nextTuple();
 

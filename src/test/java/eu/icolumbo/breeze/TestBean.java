@@ -1,6 +1,5 @@
 package eu.icolumbo.breeze;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +11,9 @@ import static java.util.Arrays.asList;
  * @author Pascal S. de Kloe
  */
 public class TestBean {
+
+	private String greeting;
+
 
 	public static class Data {
 		private String id, message;
@@ -40,6 +42,7 @@ public class TestBean {
 		}
 	}
 
+
 	public void nop() {
 	}
 
@@ -66,19 +69,27 @@ public class TestBean {
 		return result;
 	}
 
-	public Data greet(Number number) {
-		Data data = new Data();
-		data.setId(number.toString());
-		data.setMessage("Hello " + number);
-		return data;
-	}
-
 	public Data nullObject() {
 		return null;
 	}
 
 	public Data[] nullArray() {
 		return null;
+	}
+
+	public Data greet(Number number) {
+		Data data = new Data();
+		data.setId(number.toString());
+		data.setMessage(getGreeting() + " " + number);
+		return data;
+	}
+
+	public String getGreeting() {
+		return greeting;
+	}
+
+	public void setGreeting(String value) {
+		greeting = value;
 	}
 
 }

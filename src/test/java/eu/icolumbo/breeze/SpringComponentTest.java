@@ -102,10 +102,13 @@ public class SpringComponentTest {
 
 	@Test
 	public void multipleOutputFieldsBean() throws Exception {
-		SpringComponent subject = new SpringComponent(TestBean.class, "greet(n)", "id", "message", "unknown") {};
+		TestBean bean = new TestBean();
+		bean.setGreeting("Hello");
+		doReturn(bean).when(applicationContextMock).getBean(bean.getClass());
+
+		SpringComponent subject = new SpringComponent(bean.getClass(), "greet(n)", "id", "message", "unknown") {};
 		subject.setApplicationContext(applicationContextMock);
 		subject.init(stormConf, topologyContextMock);
-		doReturn(new TestBean()).when(applicationContextMock).getBean(TestBean.class);
 
 		Values[] result = subject.invoke(8);
 		Values[] expected = {new Values("8", "Hello 8", null)};
@@ -114,10 +117,13 @@ public class SpringComponentTest {
 
 	@Test
 	public void multipleOutputFieldsBeanBroken() throws Exception {
-		SpringComponent subject = new SpringComponent(TestBean.class, "greet(n)", "setterOnly", "privateGetter") {};
+		TestBean bean = new TestBean();
+		bean.setGreeting("Hello");
+		doReturn(bean).when(applicationContextMock).getBean(bean.getClass());
+
+		SpringComponent subject = new SpringComponent(bean.getClass(), "greet(n)", "setterOnly", "privateGetter") {};
 		subject.setApplicationContext(applicationContextMock);
 		subject.init(stormConf, topologyContextMock);
-		doReturn(new TestBean()).when(applicationContextMock).getBean(TestBean.class);
 
 		Values[] result = subject.invoke(8);
 		Values[] expected = {new Values(null, null)};

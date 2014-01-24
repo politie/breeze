@@ -291,6 +291,7 @@ public class SpringBoltTest {
 
 	@Test
 	public void prototypeIntegrationRun() {
+		stormConf.put("topology.name", "prototyping");
 		SpringBolt subject = new SpringBolt(TestBean.class, "hashCode()", "hash");
 		subject.prepare(stormConf, topologyContextMock, outputCollectorMock);
 		subject.execute(tupleMock);

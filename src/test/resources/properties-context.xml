@@ -11,8 +11,8 @@
 
 	<context:property-placeholder/>
 
-	<bean class="eu.icolumbo.breeze.SingletonApplicationContextTest.TestBean">
-		<property name="message" value="${greeting}"/>
+	<bean class="eu.icolumbo.breeze.TestBean">
+		<property name="greeting" value="${greeting}"/>
 	</bean>
 
 </beans>

@@ -28,12 +28,6 @@ public class SingletonApplicationContextTest {
 
 	Map<String,Object> stormConf = new HashMap<>();
 
-	public static class TestBean {
-		private String message;
-		public String getMessage() {return message;}
-		public void setMessage(String value) {message = value;}
-	}
-
 	@Before
 	public void init() {
 		stormConf.clear();
@@ -47,7 +41,7 @@ public class SingletonApplicationContextTest {
 		assertEquals("classpath:/simple-context.xml", result.getId());
 
 		TestBean bean = result.getBean(TestBean.class);
-		assertEquals("Hello", bean.getMessage());
+		assertEquals("Hello", bean.getGreeting());
 	}
 
 	@Test(expected=BeanDefinitionStoreException.class)
@@ -71,7 +65,7 @@ public class SingletonApplicationContextTest {
 		assertEquals("classpath:/properties-context.xml", result.getId());
 
 		TestBean bean = result.getBean(TestBean.class);
-		assertEquals(expected, bean.message);
+		assertEquals(expected, bean.getGreeting());
 	}
 
 	@Test

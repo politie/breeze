@@ -6,8 +6,6 @@
 			http://www.springframework.org/schema/beans/spring-beans.xsd
 		">
 
-	<bean class="eu.icolumbo.breeze.TestBean">
-		<property name="greeting" value="Hello"/>
-	</bean>
+	<bean class="eu.icolumbo.breeze.TestBean" scope="prototype"/>
 
 </beans>
