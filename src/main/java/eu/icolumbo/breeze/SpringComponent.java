@@ -117,18 +117,33 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 	throws InvocationTargetException {
 		try {
 			Object bean = spring.getBean(beanType);
-			logger.trace("Invoking {} on {}", method, bean);
-			Object returnValue = method.invoke(bean, arguments);
-
-			if (outputFields.length == 0) return EMPTY_ARRAY;
 
 			Object[] returnEntries;
-			if (scatterOutput) {
-				returnEntries = scatter(returnValue);
-				logger.trace("Scattered {} into {} parts", returnValue, returnEntries.length);
-			} else {
-				returnEntries = new Object[] {returnValue};
-				logger.trace("Using return {}", returnValue);
+			try {
+				logger.trace("Invoking {} on {}", method, bean);
+				Object returnValue = method.invoke(bean, arguments);
+
+				if (outputFields.length == 0) return EMPTY_ARRAY;
+
+				if (scatterOutput) {
+					returnEntries = scatter(returnValue);
+					logger.trace("Scattered {} into {} parts", returnValue, returnEntries.length);
+				} else {
+					returnEntries = new Object[] {returnValue};
+					logger.trace("Using return {}", returnValue);
+				}
+			} catch (IllegalArgumentException e) {
+				StringBuilder msg = new StringBuilder(toString());
+				msg.append(" invoked with incompatible arguments:");
+				for (Object a : arguments) {
+					msg.append(' ');
+					if (a == null)
+						msg.append("null");
+					else
+						msg.append(a.getClass().getName());
+				}
+				logger.error(msg.toString());
+				throw e;
 			}
 
 			int i = returnEntries.length;

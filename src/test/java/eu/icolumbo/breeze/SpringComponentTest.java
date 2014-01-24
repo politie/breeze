@@ -100,6 +100,19 @@ public class SpringComponentTest {
 		}
 	}
 
+	@Test(expected=IllegalArgumentException.class)
+	public void argumentMismatch() throws Exception {
+		TestBean bean = new TestBean();
+		bean.setGreeting("Hello");
+		doReturn(bean).when(applicationContextMock).getBean(bean.getClass());
+
+		SpringComponent subject = new SpringComponent(bean.getClass(), "array(a, b)") {};
+		subject.setApplicationContext(applicationContextMock);
+		subject.init(stormConf, topologyContextMock);
+
+		subject.invoke(null, 8);
+	}
+
 	@Test
 	public void multipleOutputFieldsBean() throws Exception {
 		TestBean bean = new TestBean();
