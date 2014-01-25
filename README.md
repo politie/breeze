@@ -5,8 +5,6 @@ Breeze binds Storm [topology components](http://github.com/nathanmarz/storm/wiki
 
 The `SpringSpout` and `SpringBolt` classes are configured with a Spring bean and a method signature. Each topology gets a dedicated application context.
 
-While Storm has existing Spring integration support for launching topologies through [storm-spring](http://github.com/granthenke/storm-spring), this approach does not provide a Spring context to components such as Bolts and Spouts.
-
 For each tuple request on `SpringSpout` and for each execute request on `SpringBolt` the bean's configured method is invoked. For bolts the function argument names are retrieved from the input tuple. The return value is emitted with the output field names.
 * When no output fields are defined the return value is discarded.
 * Single output field definitions mean that the return value is placed on the output tuple as is.
@@ -18,7 +16,7 @@ With `SpringBolt#setPassThroughFields(String...)` additional fields may be copie
 
 Storm's transaction architecture is honored with `#setAnchor(boolean)`.
 
-Breeze currently only support shuffle stream grouping.
+Breeze currently supports ["none" grouping](http://github.com/nathanmarz/storm/wiki/Concepts#stream-groupings) only.
 
 
 Get Started
@@ -33,7 +31,7 @@ Maven
 <dependency>
 	<groupId>eu.icolumbo.breeze</groupId>
 	<artifactId>breeze</artifactId>
-	<version>1.0.0</version>
+	<version>1.1.0</version>
 </dependency>
 ```
 
