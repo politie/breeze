@@ -113,6 +113,19 @@ public class BeanDefinitionTest extends AbstractXmlApplicationContext {
 		}
 	}
 
+	@Test
+	public void testTransactions() throws Exception {
+		beansXml = "<breeze:topology id='t1'>" +
+				"<breeze:spout id='s1' beanType='eu.icolumbo.breeze.TestBean' signature='ping()' outputFields='feed'>" +
+				"<breeze:transaction ack='testMethodA' fail='testMethodB'/> </breeze:spout>" +
+				"</breeze:topology>";
+		refresh();
+
+		getBean(StormTopology.class);
+
+		// add tests
+	}
+
 	@Override
 	public Resource[] getConfigResources() {
 		String xml = "<?xml version='1.0' encoding='US-ASCII'?>" +
