@@ -29,6 +29,7 @@ import static org.mockito.Mockito.verify;
 /**
  * Tests {@link SpringComponent}.
  * @author Pascal S. de Kloe
+ * @author Jethro Bakker
  */
 @RunWith(MockitoJUnitRunner.class)
 public class SpringComponentTest {
@@ -110,7 +111,7 @@ public class SpringComponentTest {
 		subject.setApplicationContext(applicationContextMock);
 		subject.init(stormConf, topologyContextMock);
 
-		subject.invoke(null, 8);
+		subject.invoke(subject.method, null, 8);
 	}
 
 	@Test
@@ -123,7 +124,12 @@ public class SpringComponentTest {
 		subject.setApplicationContext(applicationContextMock);
 		subject.init(stormConf, topologyContextMock);
 
-		Values[] result = subject.invoke(8);
+		Object[] entries = subject.invoke(subject.method, 8);
+		Values[] result = new Values[entries.length];
+		for(int i=0; i<entries.length; i++) {
+			result[i] = subject.getMapping(entries[i], subject.getOutputFields());
+		}
+
 		Values[] expected = {new Values("8", "Hello 8", null)};
 		assertArrayEquals(expected, result);
 	}
@@ -138,9 +144,13 @@ public class SpringComponentTest {
 		subject.setApplicationContext(applicationContextMock);
 		subject.init(stormConf, topologyContextMock);
 
-		Values[] result = subject.invoke(8);
+		Object[] entries = subject.invoke(subject.method, 8);
+		Values[] result = new Values[entries.length];
+		for(int i=0; i<entries.length; i++) {
+			result[i] = subject.getMapping(entries[i], subject.getOutputFields());
+		}
+
 		Values[] expected = {new Values(null, null)};
 		assertArrayEquals(expected, result);
 	}
-
 }

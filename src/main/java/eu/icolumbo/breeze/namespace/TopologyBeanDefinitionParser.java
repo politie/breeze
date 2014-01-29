@@ -18,6 +18,7 @@ import org.w3c.dom.Element;
 import java.util.StringTokenizer;
 
 import static org.springframework.util.StringUtils.hasText;
+import static org.springframework.util.xml.DomUtils.getChildElementByTagName;
 import static org.springframework.util.xml.DomUtils.getChildElementsByTagName;
 
 
@@ -35,6 +36,12 @@ public class TopologyBeanDefinitionParser extends AbstractBeanDefinitionParser {
 		for (Element spoutElement : getChildElementsByTagName(element, "spout")) {
 			BeanDefinitionBuilder builder = BeanDefinitionBuilder.rootBeanDefinition(SpringSpout.class);
 			spoutDefinitions.add(define(builder, spoutElement, registry));
+
+			Element transElement = getChildElementByTagName(spoutElement, "transaction");
+			if (transElement != null) {
+				builder.addPropertyValue("ackSignature", transElement.getAttribute("ack"));
+				builder.addPropertyValue("failSignature", transElement.getAttribute("fail"));
+			}
 		}
 
 		ManagedList<BeanDefinition> boltDefinitions = new ManagedList<>();

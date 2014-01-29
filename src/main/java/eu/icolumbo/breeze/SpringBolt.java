@@ -18,6 +18,7 @@ import java.util.Map;
 /**
  * Spring for Storm bolts.
  * @author Pascal S. de Kloe
+ * @author Jethro Bakker
  */
 public class SpringBolt extends SpringComponent implements ConfiguredBolt {
 
@@ -61,7 +62,12 @@ public class SpringBolt extends SpringComponent implements ConfiguredBolt {
 			for (int i = arguments.length; --i >= 0;
 				arguments[i] = input.getValueByField(inputFields[i]));
 
-			Values[] entries = invoke(arguments);
+			Object[] returnEntries = invoke(method, arguments);
+			Values[] entries = new Values[returnEntries.length];
+			for(int i=0; i < returnEntries.length; i++){
+				entries[i] = getMapping(returnEntries[i], getOutputFields());
+			}
+
 			logger.trace("Got {} results", entries.length);
 
 			if (entries.length == 0 && passThroughFields.length != 0 && ! getScatterOutput()) {

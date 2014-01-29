@@ -1,12 +1,14 @@
 package eu.icolumbo.breeze;
 
+import java.io.Serializable;
 import java.util.StringTokenizer;
 
 
 /**
  * @author Pascal S. de Kloe
+ * @author Jethro Bakker
  */
-public class FunctionSignature {
+public class FunctionSignature implements Serializable {
 
 	private String function;
 	private String[] arguments;

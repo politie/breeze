@@ -17,8 +17,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 
-import static java.lang.String.format;
 import static backtype.storm.utils.Utils.DEFAULT_STREAM_ID;
+import static java.lang.String.format;
 import static org.springframework.beans.BeanUtils.getPropertyDescriptor;
 
 
@@ -33,7 +33,7 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 	private static final long serialVersionUID = 2;
 	private static final Values[] EMPTY_ARRAY = {};
 
-	private final Class<?> beanType;
+	protected final Class<?> beanType;
 	private final String methodName;
 	private final String[] inputFields, outputFields;
 
@@ -41,8 +41,8 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 	private String outputStreamId;
 	private Number parallelism;
 
-	private transient ApplicationContext spring;
-	private transient Method method;
+	protected transient ApplicationContext spring;
+	protected transient Method method;
 
 	private boolean scatterOutput;
 
@@ -113,7 +113,7 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 	/**
 	 * Gets the bean invocation mapping.
 	 */
-	protected Values[] invoke(Object... arguments)
+	protected Object[] invoke(Method method, Object... arguments)
 	throws InvocationTargetException {
 		try {
 			Object bean = spring.getBean(beanType);
@@ -146,32 +146,35 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 				throw e;
 			}
 
-			int i = returnEntries.length;
-			Values[] mapping = new Values[i];
-			while (--i >= 0) {
-				Object entry = returnEntries[i];
-				if (outputFields.length == 1)
-					mapping[i] = new Values(entry);
-				else
-					mapping[i] = new Values(mapMultipleOutputFields(entry));
-			}
-			return mapping;
+			return returnEntries;
 		} catch (IllegalAccessException e) {
 			throw new SecurityException(e);
 		}
 	}
 
-	private Object[] mapMultipleOutputFields(Object result) throws IllegalAccessException, InvocationTargetException {
-		int i = outputFields.length;
+	protected Values getMapping(Object returnEntry, String[] fields) throws InvocationTargetException {
+		if (fields.length == 1)
+			return new Values(returnEntry);
+
+		try {
+			return new Values(mapMultipleOutputFields(returnEntry, fields));
+		} catch (IllegalAccessException e) {
+			throw new SecurityException(e);
+		}
+	}
+
+	private Object[] mapMultipleOutputFields(Object result, String[] fields) throws IllegalAccessException,
+			InvocationTargetException {
+		int i = fields.length;
 		Object[] output = new Object[i];
 
 		if (result instanceof Map) {
 			Map<?,?> map = (Map<?,?>) result;
 			while (--i >= 0)
-				output[i] = map.get(outputFields[i]);
+				output[i] = map.get(fields[i]);
 		} else if (result != null) {
 			while (--i >= 0) {
-				String name = outputFields[i];
+				String name = fields[i];
 				PropertyDescriptor descriptor = getPropertyDescriptor(result.getClass(), name);
 				if (descriptor == null) {
 					logger.warn("Missing property '{}' on {} for {}",

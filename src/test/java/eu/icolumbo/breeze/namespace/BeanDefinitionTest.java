@@ -25,6 +25,7 @@ import static org.junit.Assert.fail;
 /**
  * Integration tests for XML definitions.
  * @author Pascal S. de Kloe
+ * @author Jethro Bakker
  */
 public class BeanDefinitionTest extends AbstractXmlApplicationContext {
 
@@ -114,16 +115,15 @@ public class BeanDefinitionTest extends AbstractXmlApplicationContext {
 	}
 
 	@Test
-	public void testTransactions() throws Exception {
+	public void transactions() throws Exception {
 		beansXml = "<breeze:topology id='t1'>" +
 				"<breeze:spout id='s1' beanType='eu.icolumbo.breeze.TestBean' signature='ping()' outputFields='feed'>" +
-				"<breeze:transaction ack='testMethodA' fail='testMethodB'/> </breeze:spout>" +
+				"<breeze:transaction ack='testMethodA()' fail='testMethodB()'/> </breeze:spout>" +
 				"</breeze:topology>";
 		refresh();
 
-		getBean(StormTopology.class);
-
-		// add tests
+		StormTopology topology = getBean(StormTopology.class);
+		assertEquals("spout count", 1, topology.get_spouts_size());
 	}
 
 	@Override
