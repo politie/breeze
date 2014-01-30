@@ -157,13 +157,13 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 			return new Values(returnEntry);
 
 		try {
-			return new Values(mapMultipleOutputFields(returnEntry, fields));
+			return new Values(mapOutputFields(returnEntry, fields));
 		} catch (IllegalAccessException e) {
 			throw new SecurityException(e);
 		}
 	}
 
-	private Object[] mapMultipleOutputFields(Object result, String[] fields) throws IllegalAccessException,
+	protected Object[] mapOutputFields(Object result, String[] fields) throws IllegalAccessException,
 			InvocationTargetException {
 		int i = fields.length;
 		Object[] output = new Object[i];

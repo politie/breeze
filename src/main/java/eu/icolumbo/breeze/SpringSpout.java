@@ -3,7 +3,6 @@ package eu.icolumbo.breeze;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.tuple.Values;
-import org.apache.commons.beanutils.PropertyUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +25,7 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 	private SpoutOutputCollector collector;
 
 	private FunctionSignature ackSignature, failSignature;
-	protected transient Method ackMethod, failMethod;
+	private transient Method ackMethod, failMethod;
 
 	public SpringSpout(Class<?> beanType, String invocation, String... outputFields) {
 		super(beanType, invocation, outputFields);
@@ -52,8 +51,9 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 				TransactionMessageId messageId = new TransactionMessageId();
 				if (failSignature != null)
 					messageId.setFail(getTransactionMapping(results[i], failSignature.getArguments()));
-				if (ackSignature != null)
+				if (ackSignature != null) {
 					messageId.setAck(getTransactionMapping(results[i], ackSignature.getArguments()));
+				}
 
 				collector.emit(streamId, entries, messageId);
 			}
@@ -124,18 +124,11 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 	}
 
 	protected Values getTransactionMapping(Object returnEntry, String[] fields) throws InvocationTargetException {
-		if(fields.length > 1)
-			throw new IllegalArgumentException("Multiple arguments not supported");
-		else if(fields.length == 1)
-			try {
-				return new Values(PropertyUtils.getSimpleProperty(returnEntry, fields[0]));
-			} catch (IllegalAccessException e) {
-				throw new SecurityException(e);
-			} catch (NoSuchMethodException ne) {
-				throw new RuntimeException(ne);
-			}
-		else
-			return new Values(returnEntry);
+		try {
+			return new Values(mapOutputFields(returnEntry, fields));
+		} catch (IllegalAccessException e) {
+			throw new SecurityException(e);
+		}
 	}
 
 	public void setAckSignature(String ack) {
@@ -144,5 +137,13 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 
 	public void setFailSignature(String fail) {
 		this.failSignature = FunctionSignature.valueOf(fail);
+	}
+
+	public Method getAckMethod() {
+		return ackMethod;
+	}
+
+	public Method getFailMethod() {
+		return failMethod;
 	}
 }

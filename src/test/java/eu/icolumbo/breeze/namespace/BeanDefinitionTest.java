@@ -1,25 +1,20 @@
 package eu.icolumbo.breeze.namespace;
 
+import backtype.storm.generated.*;
+import eu.icolumbo.breeze.FunctionSignature;
 import eu.icolumbo.breeze.SpringBolt;
 import eu.icolumbo.breeze.SpringSpout;
-
-import backtype.storm.generated.Bolt;
-import backtype.storm.generated.GlobalStreamId;
-import backtype.storm.generated.Grouping;
-import backtype.storm.generated.SpoutSpec;
-import backtype.storm.generated.StormTopology;
 import org.junit.Test;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.context.support.AbstractXmlApplicationContext;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.nio.charset.Charset;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 
 /**
@@ -118,12 +113,16 @@ public class BeanDefinitionTest extends AbstractXmlApplicationContext {
 	public void transactions() throws Exception {
 		beansXml = "<breeze:topology id='t1'>" +
 				"<breeze:spout id='s1' beanType='eu.icolumbo.breeze.TestBean' signature='ping()' outputFields='feed'>" +
-				"<breeze:transaction ack='testMethodA()' fail='testMethodB()'/> </breeze:spout>" +
+				"<breeze:transaction ack='testMethodA(a)' fail='testMethodB(b)'/> </breeze:spout>" +
 				"</breeze:topology>";
 		refresh();
 
-		StormTopology topology = getBean(StormTopology.class);
-		assertEquals("spout count", 1, topology.get_spouts_size());
+		SpringSpout spout = getBean(SpringSpout.class);
+
+		assertEquals("testMethodA", ((FunctionSignature) ReflectionTestUtils.getField(spout,
+				"ackSignature")).getFunction());
+		assertEquals("testMethodB", ((FunctionSignature) ReflectionTestUtils.getField(spout,
+				"failSignature")).getFunction());
 	}
 
 	@Override

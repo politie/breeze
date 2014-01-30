@@ -46,6 +46,12 @@ public class TestBean {
 	public void nop() {
 	}
 
+	public TestBean instance() {
+		TestBean testBean = new TestBean();
+		testBean.setGreeting("hi!");
+		return testBean;
+	}
+
 	public String ping() {
 		return "ping";
 	}
