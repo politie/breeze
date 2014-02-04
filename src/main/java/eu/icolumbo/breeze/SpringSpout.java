@@ -55,7 +55,10 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 					messageId.setAck(getTransactionMapping(results[i], ackSignature.getArguments()));
 				}
 
-				collector.emit(streamId, entries, messageId);
+				if(messageId.getAck() != null && messageId.getFail() != null)
+					collector.emit(streamId, entries, messageId);
+				else
+					collector.emit(streamId, entries);
 			}
 		} catch (InvocationTargetException e) {
 			collector.reportError(e.getCause());

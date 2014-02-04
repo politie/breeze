@@ -55,7 +55,7 @@ public class SpringSpoutTest {
 		subject.open(stormConf, contextMock, collectorMock);
 		subject.nextTuple();
 
-		verify(collectorMock).emit(eq("ether"), eq(asList((Object) "ping")), any(TransactionMessageId.class));
+		verify(collectorMock).emit(eq("ether"), eq(asList((Object) "ping")));
 	}
 
 	@Test
