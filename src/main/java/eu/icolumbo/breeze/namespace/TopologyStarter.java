@@ -73,6 +73,11 @@ public class TopologyStarter extends Thread {
 	@Override
 	public void run() {
 		config.put(Config.TOPOLOGY_NAME, ID);
+
+		// Storm needs the right type see: STORM-173
+		if(config.containsKey(Config.TOPOLOGY_WORKERS))
+			config.put(Config.TOPOLOGY_WORKERS, Integer.parseInt((String) config.get(Config.TOPOLOGY_WORKERS)));
+
 		try {
 			StormTopology topology = spring.getBean(ID, StormTopology.class);
 
