@@ -31,4 +31,5 @@ public class TransactionMessageId implements Serializable {
 	public Values getFail() {
 		return fail;
 	}
+
 }

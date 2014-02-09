@@ -2,7 +2,6 @@ package eu.icolumbo.breeze;
 
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
-import backtype.storm.tuple.Values;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -11,15 +10,21 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.context.ApplicationContext;
 
-import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
 
 
 /**
@@ -55,33 +60,68 @@ public class SpringSpoutTest {
 		subject.open(stormConf, contextMock, collectorMock);
 		subject.nextTuple();
 
-		verify(collectorMock).emit(eq("ether"), eq(asList((Object) "ping")));
+		verify(collectorMock).emit("ether", asList((Object) "ping"));
 	}
 
+	/**
+	 * Tests the {@link SpringSpout#setAckSignature(String) ack signature} effect
+	 * with {@link SpringSpout#setScatterOutput(boolean) record chunks}.
+	 */
 	@Test
-	public void happyFlowTransactions() throws Exception {
-		SpringSpout subject = new SpringSpout(TestBean.class, "instance()", "out");
-		subject.setOutputStreamId("ether");
-		subject.setAckSignature("echo(greeting)");
-		subject.setFailSignature("echo(greeting)");
+	public void ackTransaction() throws Exception {
+		TestBean.Data record1 = new TestBean.Data();
+		record1.setId(0);
+		record1.setMessage("ding");
+		TestBean.Data record2 = new TestBean.Data();
+		record2.setId(1);
+		record2.setMessage("dong");
+
+		List bean = new ArrayList();
+		bean.add(record1);
+		bean.add(record2);
+		doReturn(bean).when(applicationContextMock).getBean(bean.getClass());
+
+		SpringSpout subject = new SpringSpout(bean.getClass(), "toArray()", "g");
+		subject.setScatterOutput(true);
+		subject.setAckSignature("set(id, message)");
 
 		subject.setApplicationContext(applicationContextMock);
-		TestBean testBeanMock = mock(TestBean.class);
-		TestBean testBeanMock2 = mock(TestBean.class);
-		doReturn(testBeanMock).when(applicationContextMock).getBean(TestBean.class);
-
-		doReturn(testBeanMock2).when(testBeanMock).instance();
-		doReturn("hi!").when(testBeanMock2).getGreeting();
-
 		subject.open(stormConf, contextMock, collectorMock);
 		subject.nextTuple();
 
-		ArgumentCaptor<TransactionMessageId> transactionCaptor = ArgumentCaptor.forClass(TransactionMessageId.class);
-		verify(collectorMock).emit(eq("ether"), eq(asList((Object) testBeanMock2)), transactionCaptor.capture());
+		ArgumentCaptor<Object> messageIdCaptor = ArgumentCaptor.forClass(Object.class);
+		verify(collectorMock).emit(eq("default"), eq(bean.subList(0, 1)), messageIdCaptor.capture());
+		verify(collectorMock).emit(eq("default"), eq(bean.subList(1, 2)), messageIdCaptor.capture());
+		verifyNoMoreInteractions(collectorMock);
 
-		subject.ack(transactionCaptor.getValue());
+		subject.ack(messageIdCaptor.getAllValues().get(0));
+		subject.ack(messageIdCaptor.getAllValues().get(1));
+		assertEquals(asList("ding", "dong"), bean);
+	}
 
-		verify(testBeanMock).echo("hi!");
+	/**
+	 * Tests the {@link SpringSpout#setFailSignature(String) fail signature} effect
+	 * on a {@link SpringSpout#setOutputStreamId(String) custom stream ID} with collection fields.
+	 */
+	@Test
+	public void failTransaction() throws Exception {
+		List bean = new ArrayList();
+		bean.add("dang");
+		doReturn(bean).when(applicationContextMock).getBean(bean.getClass());
+
+		SpringSpout subject = new SpringSpout(bean.getClass(), "clone()", "x");
+		subject.setFailSignature("clear()");
+		subject.setOutputStreamId("universe");
+
+		subject.setApplicationContext(applicationContextMock);
+		subject.open(stormConf, contextMock, collectorMock);
+		subject.nextTuple();
+
+		ArgumentCaptor<Object> messageIdCaptor = ArgumentCaptor.forClass(Object.class);
+		verify(collectorMock).emit(eq("universe"), eq(asList((Object) bean)), messageIdCaptor.capture());
+
+		subject.fail(messageIdCaptor.getValue());
+		assertEquals(Collections.emptyList(), bean);
 	}
 
 	@Test
@@ -109,71 +149,31 @@ public class SpringSpoutTest {
 	}
 
 	@Test
-	public void init() throws Exception {
+	public void ackSignatureMismatch() {
 		SpringSpout subject = new SpringSpout(TestBean.class, "ping()", "out");
-		subject.setAckSignature("echo(greeting)");
-		subject.setFailSignature("echo(greeting)");
-
-		subject.open(stormConf, contextMock, collectorMock);
-
-		Method expected = SpringSpout.findMethod(TestBean.class, "echo", 1);
-		assertEquals(expected, subject.getAckMethod());
-		assertEquals(expected, subject.getFailMethod());
-	}
-
-	@Test(expected = IllegalStateException.class)
-	public void illegalAckSignature() throws Exception {
-		SpringSpout subject = new SpringSpout(TestBean.class, "ping()", "out");
-		subject.setAckSignature("failMethod(greeting)");
-
-		subject.open(stormConf, contextMock, collectorMock);
+		subject.setAckSignature("doesNotExist()");
+		try {
+			subject.open(stormConf, contextMock, collectorMock);
+			fail("no exception");
+		} catch (IllegalStateException e) {
+			assertEquals("Can't use configured bean method", e.getMessage());
+		}
 	}
 
 	@Test
-	public void ack() throws Exception {
-		SpringSpout subject = new SpringSpout(TestBean.class, "ping()", "out");
-		subject.setAckSignature("echo(greeting)");
-
-		subject.setApplicationContext(applicationContextMock);
-		TestBean testBeanMock = mock(TestBean.class);
-		doReturn(testBeanMock).when(applicationContextMock).getBean(TestBean.class);
-
+	public void ackException() {
+		SpringSpout subject = new SpringSpout(TestBean.class, "toString()", "s");
+		subject.setAckSignature("clone()");
 		subject.open(stormConf, contextMock, collectorMock);
-
-		TransactionMessageId messageId = new TransactionMessageId();
-		messageId.setAck(new Values("1234"));
-		subject.ack(messageId);
-
-		verify(testBeanMock).echo("1234");
+		subject.ack(new TransactionMessageId());
 	}
 
 	@Test
-	public void fail() throws Exception {
-		SpringSpout subject = new SpringSpout(TestBean.class, "ping()", "out");
-		subject.setFailSignature("echo(greeting)");
-
-		subject = spy(subject);
-
+	public void failException() {
+		SpringSpout subject = new SpringSpout(TestBean.class, "toString()", "s");
+		subject.setFailSignature("clone()");
 		subject.open(stormConf, contextMock, collectorMock);
-
-		TransactionMessageId messageId = new TransactionMessageId();
-		messageId.setFail(new Values("1234"));
-		subject.fail(messageId);
-
-		Method method = SpringSpout.findMethod(TestBean.class, "echo", 1);
-		verify(subject).invoke(method, "1234");
+		subject.fail(new TransactionMessageId());
 	}
 
-	@Test
-	public void transactionMapping() throws Exception {
-		SpringSpout subject = new SpringSpout(TestBean.class, "ping()", "out");
-
-		TestBean testBean = new TestBean();
-		testBean.setGreeting("hello");
-
-		String[] fields = {"greeting"};
-		Values values = subject.getTransactionMapping(testBean, fields);
-
-		assertEquals("hello", values.get(0));
-	}
 }

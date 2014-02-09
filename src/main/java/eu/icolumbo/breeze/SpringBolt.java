@@ -94,6 +94,8 @@ public class SpringBolt extends SpringComponent implements ConfiguredBolt {
 		} catch (InvocationTargetException e) {
 			collector.reportError(e.getCause());
 			collector.fail(input);
+		} catch (IllegalAccessException e) {
+			throw new SecurityException(e);
 		}
 	}
 

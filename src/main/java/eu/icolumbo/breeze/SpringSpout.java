@@ -48,20 +48,23 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 			for (int i = results.length; --i >= 0; ) {
 				Values entries = getMapping(results[i], getOutputFields());
 
-				TransactionMessageId messageId = new TransactionMessageId();
-				if (failSignature != null)
-					messageId.setFail(getTransactionMapping(results[i], failSignature.getArguments()));
-				if (ackSignature != null) {
-					messageId.setAck(getTransactionMapping(results[i], ackSignature.getArguments()));
+				if (failSignature == null && ackSignature == null) {
+					collector.emit(streamId, entries);
+					continue;
 				}
 
-				if(messageId.getAck() != null && messageId.getFail() != null)
-					collector.emit(streamId, entries, messageId);
-				else
-					collector.emit(streamId, entries);
+				TransactionMessageId messageId = new TransactionMessageId();
+				if (failSignature != null)
+					messageId.setFail(new Values(mapOutputFields(results[i], failSignature.getArguments())));
+				if (ackSignature != null)
+					messageId.setAck(new Values(mapOutputFields(results[i], ackSignature.getArguments())));
+
+				collector.emit(streamId, entries, messageId);
 			}
 		} catch (InvocationTargetException e) {
 			collector.reportError(e.getCause());
+		} catch (IllegalAccessException e) {
+			throw new SecurityException(e);
 		}
 	}
 
@@ -78,26 +81,28 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 	}
 
 	@Override
-	public void ack(Object obj) {
-		if (ackMethod != null) {
-			Values values = ((TransactionMessageId) obj).getAck();
-			invokeTransactionMethod(values, ackMethod);
+	public void ack(Object messageId) {
+		if (ackMethod == null) return;
+
+		try {
+			Values values = ((TransactionMessageId) messageId).getAck();
+			logger.trace("Ack with: {}", values);
+			invoke(ackMethod, values.toArray());
+		} catch (Exception e) {
+			logger.error("Ack notification abort", e);
 		}
 	}
 
 	@Override
-	public void fail(Object obj) {
-		if (failMethod != null) {
-			Values values = ((TransactionMessageId) obj).getFail();
-			invokeTransactionMethod(values, failMethod);
-		}
-	}
+	public void fail(Object messageId) {
+		if (failMethod == null) return;
 
-	private void invokeTransactionMethod(Values values, Method method) {
 		try {
-			invoke(method, values.toArray());
-		} catch (InvocationTargetException e) {
-			logger.warn("Exception while invoking method", e);
+			Values values = ((TransactionMessageId) messageId).getFail();
+			logger.trace("Fail with: {}", values);
+			invoke(failMethod, values.toArray());
+		} catch (Exception e) {
+			logger.error("Fail notification abort", e);
 		}
 	}
 
@@ -126,14 +131,6 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 		return method;
 	}
 
-	protected Values getTransactionMapping(Object returnEntry, String[] fields) throws InvocationTargetException {
-		try {
-			return new Values(mapOutputFields(returnEntry, fields));
-		} catch (IllegalAccessException e) {
-			throw new SecurityException(e);
-		}
-	}
-
 	public void setAckSignature(String ack) {
 		this.ackSignature = FunctionSignature.valueOf(ack);
 	}
@@ -142,11 +139,4 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 		this.failSignature = FunctionSignature.valueOf(fail);
 	}
 
-	public Method getAckMethod() {
-		return ackMethod;
-	}
-
-	public Method getFailMethod() {
-		return failMethod;
-	}
 }

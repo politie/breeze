@@ -16,13 +16,14 @@ public class TestBean {
 
 
 	public static class Data {
-		private String id, message;
+		private int id;
+		private String message;
 
-		public String getId() {
+		public int getId() {
 			return id;
 		}
 
-		public void setId(String value) {
+		public void setId(int value) {
 			id = value;
 		}
 
@@ -44,12 +45,6 @@ public class TestBean {
 
 
 	public void nop() {
-	}
-
-	public TestBean instance() {
-		TestBean testBean = new TestBean();
-		testBean.setGreeting("hi!");
-		return testBean;
 	}
 
 	public String ping() {
@@ -85,7 +80,7 @@ public class TestBean {
 
 	public Data greet(Number number) {
 		Data data = new Data();
-		data.setId(number.toString());
+		data.setId(number.intValue());
 		data.setMessage(getGreeting() + " " + number);
 		return data;
 	}

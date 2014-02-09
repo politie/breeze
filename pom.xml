@@ -112,7 +112,7 @@
 								<limit>
 									<counter>LINE</counter>
 									<value>MISSEDCOUNT</value>
-									<maximum>8</maximum>
+									<maximum>4</maximum>
 								</limit>
 								<limit>
 									<counter>CLASS</counter>

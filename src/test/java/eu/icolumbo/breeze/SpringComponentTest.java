@@ -130,7 +130,7 @@ public class SpringComponentTest {
 			result[i] = subject.getMapping(entries[i], subject.getOutputFields());
 		}
 
-		Values[] expected = {new Values("8", "Hello 8", null)};
+		Values[] expected = {new Values(8, "Hello 8", null)};
 		assertArrayEquals(expected, result);
 	}
 
