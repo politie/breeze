@@ -76,7 +76,7 @@ public class SpringSpoutTest {
 		record2.setId(1);
 		record2.setMessage("dong");
 
-		List bean = new ArrayList();
+		List<Object> bean = new ArrayList<>();
 		bean.add(record1);
 		bean.add(record2);
 		doReturn(bean).when(applicationContextMock).getBean(bean.getClass());
@@ -96,7 +96,7 @@ public class SpringSpoutTest {
 
 		subject.ack(messageIdCaptor.getAllValues().get(0));
 		subject.ack(messageIdCaptor.getAllValues().get(1));
-		assertEquals(asList("ding", "dong"), bean);
+		assertEquals(asList((Object) "ding", "dong"), bean);
 	}
 
 	/**
@@ -105,7 +105,7 @@ public class SpringSpoutTest {
 	 */
 	@Test
 	public void failTransaction() throws Exception {
-		List bean = new ArrayList();
+		List<Object> bean = new ArrayList<>();
 		bean.add("dang");
 		doReturn(bean).when(applicationContextMock).getBean(bean.getClass());
 
@@ -156,7 +156,7 @@ public class SpringSpoutTest {
 			subject.open(stormConf, contextMock, collectorMock);
 			fail("no exception");
 		} catch (IllegalStateException e) {
-			assertEquals("Can't use configured bean method", e.getMessage());
+			assertEquals("Unusable transaction signature", e.getMessage());
 		}
 	}
 

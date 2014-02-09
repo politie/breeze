@@ -96,7 +96,7 @@ public class SpringComponentTest {
 			}.init(stormConf, topologyContextMock);
 			fail("no exception");
 		} catch (IllegalStateException e) {
-			assertEquals("Can't use configured bean method", e.getMessage());
+			assertEquals("Unusable input signature", e.getMessage());
 			assertNotNull(e.getCause());
 		}
 	}
@@ -111,7 +111,7 @@ public class SpringComponentTest {
 		subject.setApplicationContext(applicationContextMock);
 		subject.init(stormConf, topologyContextMock);
 
-		subject.invoke(subject.method, null, 8);
+		subject.invoke(new Object[] {null, 8});
 	}
 
 	@Test
@@ -124,7 +124,7 @@ public class SpringComponentTest {
 		subject.setApplicationContext(applicationContextMock);
 		subject.init(stormConf, topologyContextMock);
 
-		Object[] entries = subject.invoke(subject.method, 8);
+		Object[] entries = subject.invoke(new Object[] {8});
 		Values[] result = new Values[entries.length];
 		for(int i=0; i<entries.length; i++) {
 			result[i] = subject.getMapping(entries[i], subject.getOutputFields());
@@ -144,7 +144,7 @@ public class SpringComponentTest {
 		subject.setApplicationContext(applicationContextMock);
 		subject.init(stormConf, topologyContextMock);
 
-		Object[] entries = subject.invoke(subject.method, 8);
+		Object[] entries = subject.invoke(new Object[] {8});
 		Values[] result = new Values[entries.length];
 		for(int i=0; i<entries.length; i++) {
 			result[i] = subject.getMapping(entries[i], subject.getOutputFields());
@@ -153,4 +153,5 @@ public class SpringComponentTest {
 		Values[] expected = {new Values(null, null)};
 		assertArrayEquals(expected, result);
 	}
+
 }

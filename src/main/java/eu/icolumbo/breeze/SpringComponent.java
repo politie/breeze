@@ -12,7 +12,6 @@ import org.springframework.context.ApplicationContextAware;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
@@ -30,21 +29,22 @@ import static org.springframework.beans.BeanUtils.getPropertyDescriptor;
 public abstract class SpringComponent implements ConfiguredComponent, ApplicationContextAware {
 
 	private static final Logger logger = LoggerFactory.getLogger(SpringSpout.class);
-	private static final long serialVersionUID = 2;
-	private static final Values[] EMPTY_ARRAY = {};
+	private static final long serialVersionUID = 3;
+	static final Values[] EMPTY_ARRAY = {};
 
 	protected final Class<?> beanType;
-	private final String methodName;
-	private final String[] inputFields, outputFields;
 
-	private transient String id;
+	private final FunctionSignature inputSignature;
+	private final String[] outputFields;
+
 	private String outputStreamId;
+	private boolean scatterOutput;
+
 	private Number parallelism;
 
-	protected transient ApplicationContext spring;
-	protected transient Method method;
-
-	private boolean scatterOutput;
+	private transient String id;
+	private transient ApplicationContext spring;
+	private transient Method method;
 
 
 	/**
@@ -56,10 +56,7 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 	public SpringComponent(Class<?> beanType, String invocation, String... outputFields) {
 		this.beanType = beanType;
 		this.outputFields = outputFields;
-
-		FunctionSignature signature = FunctionSignature.valueOf(invocation);
-		this.methodName = signature.getFunction();
-		this.inputFields = signature.getArguments();
+		this.inputSignature = FunctionSignature.valueOf(invocation);
 	}
 
 	/**
@@ -70,17 +67,15 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 		logger.debug("Prepare " + this);
 
 		try {
-			method = findMethod(beanType, methodName, inputFields.length);
+			method = inputSignature.findMethod(beanType);
 			logger.info(format("%s uses %s", this, method.toGenericString()));
 		} catch (ReflectiveOperationException e) {
-			throw new IllegalStateException("Can't use configured bean method", e);
+			throw new IllegalStateException("Unusable input signature", e);
 		}
 
 		if (spring == null)
 			spring = SingletonApplicationContext.get(stormConf, topologyContext);
 
-		// Fail-fast
-		method.setAccessible(true);
 		spring.getBean(beanType);
 	}
 
@@ -98,11 +93,6 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 	}
 
 	@Override
-	public void setApplicationContext(ApplicationContext value) {
-		spring = value;
-	}
-
-	@Override
 	public String toString() {
 		StringBuilder description = new StringBuilder();
 		description.append(getClass().getSimpleName());
@@ -113,7 +103,15 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 	/**
 	 * Gets the bean invocation mapping.
 	 */
-	protected Object[] invoke(Method method, Object... arguments)
+	protected Object[] invoke(Object[] arguments)
+	throws InvocationTargetException, IllegalAccessException {
+		return invoke(method, arguments);
+	}
+
+	/**
+	 * Gets the bean invocation mapping.
+	 */
+	protected Object[] invoke(Method method, Object[] arguments)
 	throws InvocationTargetException, IllegalAccessException {
 		Object bean = spring.getBean(beanType);
 
@@ -196,79 +194,6 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 		return new Object[] {o};
 	}
 
-	static Method findMethod(Class<?> type, String name, int paramCount)
-	throws ReflectiveOperationException {
-		Method match = null;
-		for (Method option : type.getDeclaredMethods()) {
-			if (! name.equals(option.getName())) continue;
-			Class<?>[] parameters = option.getParameterTypes();
-			if (parameters.length != paramCount) continue;
-			if (match != null) {
-				if (refines(option, match)) continue;
-				if (! refines(match, option))
-					throw ambiguity(match, option);
-			}
-			match = option;
-		}
-
-		Class<?>[] parents = { type.getSuperclass() };
-		if (type.isInterface())
-			parents = type.getInterfaces();
-		for (Class<?> parent : parents) {
-			if (parent == null) continue;
-			try {
-				Method superMatch = findMethod(parent, name, paramCount);
-				if (match == null) {
-					match = superMatch;
-					continue;
-				}
-				if (! refines(superMatch, match))
-					throw ambiguity(match, superMatch);
-			} catch (NoSuchMethodException ignored) {
-			}
-		}
-
-		if (match != null) return match;
-		String msg = format("No method %s#%s with %d parameters",
-				type, name, paramCount);
-		throw new NoSuchMethodException(msg);
-	}
-
-	private static boolean refines(Method a, Method b) {
-		Class<?>[] aParams = a.getParameterTypes();
-		Class<?>[] bParams = b.getParameterTypes();
-		int i = aParams.length;
-		while (--i >= 0)
-			if (! bParams[i].isAssignableFrom(aParams[i]))
-				return false;
-		return true;
-	}
-
-	private static ReflectiveOperationException ambiguity(Method a, Method b)
-	throws ReflectiveOperationException {
-		String[] readable = { a.toGenericString(), b.toGenericString() };
-		Arrays.sort(readable);
-		String msg = format("Ambiguity between %s and %s",
-				readable[0], readable[1]);
-		return new ReflectiveOperationException(msg);
-	}
-
-	@Override
-	public String getId() {
-		if (id == null) {
-			setId(UUID.randomUUID().toString());
-			logger.warn("Generated ID for {}: {}", this, beanType);
-		}
-		return id;
-	}
-
-	/**
-	 * Sets the Storm & Spring identifier.
-	 */
-	public void setId(String value) {
-		id = value;
-	}
-
 	@Override
 	public String getOutputStreamId() {
 		if (outputStreamId == null)
@@ -284,23 +209,11 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 		outputStreamId = value;
 	}
 
-	@Override
-	public Number getParallelism() {
-		return parallelism;
-	}
-
-	/**
-	 * Sets the Storm parallelism hint.
-	 */
-	public void setParallelism(Number value) {
-		parallelism = value;
-	}
-
 	/**
 	 * Gets the field names.
 	 */
 	public String[] getInputFields() {
-		return inputFields;
+		return inputSignature.getArguments();
 	}
 
 	@Override
@@ -322,6 +235,39 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 	 */
 	public void setScatterOutput(boolean value) {
 		scatterOutput = value;
+	}
+
+	@Override
+	public Number getParallelism() {
+		return parallelism;
+	}
+
+	/**
+	 * Sets the Storm parallelism hint.
+	 */
+	public void setParallelism(Number value) {
+		parallelism = value;
+	}
+
+	@Override
+	public String getId() {
+		if (id == null) {
+			setId(UUID.randomUUID().toString());
+			logger.warn("Generated ID for {}: {}", this, beanType);
+		}
+		return id;
+	}
+
+	/**
+	 * Sets the Storm & Spring identifier.
+	 */
+	public void setId(String value) {
+		id = value;
+	}
+
+	@Override
+	public void setApplicationContext(ApplicationContext value) {
+		spring = value;
 	}
 
 }

@@ -2,8 +2,8 @@ package eu.icolumbo.breeze;
 
 import org.junit.Test;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 
-import static eu.icolumbo.breeze.SpringComponent.findMethod;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -11,7 +11,7 @@ import static org.junit.Assert.fail;
 
 
 /**
- * Tests {@link SpringComponent#findMethod(Class, String, int)}.
+ * Tests {@link FunctionSignature#findMethod(Class)}.
  * @author Pascal S. de Kloe
  */
 public class ReflectionLookupTest {
@@ -142,6 +142,13 @@ public class ReflectionLookupTest {
 		assertArrayEquals(new Class<?>[] { Object.class }, m.getParameterTypes());
 		Method n = findMethod(o.getClass(), "compareTo", 1);
 		assertArrayEquals(new Class<?>[]{ Object.class }, n.getParameterTypes());
+	}
+
+	private static Method findMethod(Class<?> type, String method, int paramCount)
+	throws Exception{
+		String[] params = new String[paramCount];
+		Arrays.fill(params, "arbitrary");
+		return new FunctionSignature(method, params).findMethod(type);
 	}
 
 }

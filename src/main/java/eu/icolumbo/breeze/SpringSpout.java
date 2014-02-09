@@ -10,8 +10,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map;
 
-import static java.lang.String.format;
-
 
 /**
  * Spring for Storm spouts.
@@ -27,6 +25,7 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 	private FunctionSignature ackSignature, failSignature;
 	private transient Method ackMethod, failMethod;
 
+
 	public SpringSpout(Class<?> beanType, String invocation, String... outputFields) {
 		super(beanType, invocation, outputFields);
 	}
@@ -40,7 +39,7 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 	@Override
 	public void nextTuple() {
 		try {
-			Object[] results = invoke(method);
+			Object[] results = invoke(EMPTY_ARRAY);
 			String streamId = getOutputStreamId();
 			logger.debug("{} provides {} tuples to stream {}",
 					new Object[] {this, results.length, streamId});
@@ -81,12 +80,12 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 	}
 
 	@Override
-	public void ack(Object messageId) {
-		if (ackMethod == null) return;
-
+	public void ack(Object o) {
+		if (! (o instanceof TransactionMessageId)) return;
+		TransactionMessageId messageId = (TransactionMessageId) o;
+		Object[] values = messageId.getAckParams();
+		logger.trace("Ack with: {}", values);
 		try {
-			Object[] values = ((TransactionMessageId) messageId).getAckParams();
-			logger.trace("Ack with: {}", values);
 			invoke(ackMethod, values);
 		} catch (Exception e) {
 			logger.error("Ack notification abort", e);
@@ -94,12 +93,12 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 	}
 
 	@Override
-	public void fail(Object messageId) {
-		if (failMethod == null) return;
-
+	public void fail(Object o) {
+		if (! (o instanceof TransactionMessageId)) return;
+		TransactionMessageId messageId = (TransactionMessageId) o;
+		Object[] values = messageId.getFailParams();
+		logger.trace("Fail with: {}", values);
 		try {
-			Object[] values = ((TransactionMessageId) messageId).getFailParams();
-			logger.trace("Fail with: {}", values);
 			invoke(failMethod, values);
 		} catch (Exception e) {
 			logger.error("Fail notification abort", e);
@@ -110,25 +109,18 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 	protected void init(Map stormConf, TopologyContext topologyContext) {
 		super.init(stormConf, topologyContext);
 
-		if (ackSignature != null) {
-			ackMethod = initTransactionMethod(ackSignature);
-		}
-
-		if (failSignature != null) {
-			failMethod = initTransactionMethod(failSignature);
-		}
-	}
-
-	private Method initTransactionMethod(FunctionSignature signature) {
-		Method method;
 		try {
-			method = findMethod(beanType, signature.getFunction(), signature.getArguments().length);
-			logger.info(format("%s uses %s for transaction", this, method.toGenericString()));
+			if (ackSignature != null) {
+				ackMethod = ackSignature.findMethod(beanType);
+				logger.info("{} uses {} for transaction acknowledgement", this, ackMethod.toGenericString());
+			}
+			if (failSignature != null) {
+				failMethod = failSignature.findMethod(beanType);
+				logger.info("{} uses {} for transaction failures", this, failMethod.toGenericString());
+			}
 		} catch (ReflectiveOperationException e) {
-			throw new IllegalStateException("Can't use configured bean method", e);
+			throw new IllegalStateException("Unusable transaction signature", e);
 		}
-		method.setAccessible(true);
-		return method;
 	}
 
 	public void setAckSignature(String ack) {

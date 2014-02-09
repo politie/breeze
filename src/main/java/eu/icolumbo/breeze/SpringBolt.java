@@ -24,10 +24,10 @@ public class SpringBolt extends SpringComponent implements ConfiguredBolt {
 
 	private static final Logger logger = LoggerFactory.getLogger(SpringBolt.class);
 
+	private OutputCollector collector;
+
 	private boolean doAnchor = true;
 	private String[] passThroughFields = {};
-
-	private OutputCollector collector;
 
 
 	public SpringBolt(Class<?> beanType, String invocation, String... outputFields) {
@@ -62,7 +62,7 @@ public class SpringBolt extends SpringComponent implements ConfiguredBolt {
 			for (int i = arguments.length; --i >= 0;
 				arguments[i] = input.getValueByField(inputFields[i]));
 
-			Object[] returnEntries = invoke(method, arguments);
+			Object[] returnEntries = invoke(arguments);
 			Values[] entries = new Values[returnEntries.length];
 			for(int i=0; i < returnEntries.length; i++){
 				entries[i] = getMapping(returnEntries[i], getOutputFields());

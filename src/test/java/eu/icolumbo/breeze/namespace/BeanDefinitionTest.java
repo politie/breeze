@@ -1,9 +1,14 @@
 package eu.icolumbo.breeze.namespace;
 
-import backtype.storm.generated.*;
 import eu.icolumbo.breeze.FunctionSignature;
 import eu.icolumbo.breeze.SpringBolt;
 import eu.icolumbo.breeze.SpringSpout;
+
+import backtype.storm.generated.Bolt;
+import backtype.storm.generated.GlobalStreamId;
+import backtype.storm.generated.Grouping;
+import backtype.storm.generated.SpoutSpec;
+import backtype.storm.generated.StormTopology;
 import org.junit.Test;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.context.support.AbstractXmlApplicationContext;
@@ -14,7 +19,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.nio.charset.Charset;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 
 /**
