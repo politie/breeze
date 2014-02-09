@@ -1,35 +1,50 @@
 package eu.icolumbo.breeze;
 
-import backtype.storm.tuple.Values;
-
 import java.io.Serializable;
 
+
 /**
- * Transaction message object.
+ * Transaction context container.
  * @author Jethro Bakker
+ * @author Pascal S. de Kloe
  */
 public class TransactionMessageId implements Serializable {
 
-	private static final Long serialVersionUID = 1L;
+	private static final long serialVersionUID = 2L;
 
-	private Values ack;
+	private Object[] ackParams, failParams;
 
-	private Values fail;
 
-	public void setAck(Values ack) {
-		this.ack = ack;
+	/**
+	 * Gets the parameter values for the
+	 * {@link SpringSpout#setAckSignature(String) transaction ack call}.
+	 */
+	public Object[] getAckParams() {
+		return ackParams;
 	}
 
-	public void setFail(Values fail) {
-		this.fail = fail;
+	/**
+	 * Sets the parameter values for the
+	 * {@link SpringSpout#setAckSignature(String) transaction ack call}.
+	 */
+	public void setAckParams(Object... values) {
+		ackParams = values;
 	}
 
-	public Values getAck() {
-		return ack;
+	/**
+	 * Gets the parameter values for the
+	 * {@link SpringSpout#setFailSignature(String) transaction fail call}.
+	 */
+	public Object[] getFailParams() {
+		return failParams;
 	}
 
-	public Values getFail() {
-		return fail;
+	/**
+	 * Sets the parameter values for the
+	 * {@link SpringSpout#setFailSignature(String) transaction fail call}.
+	 */
+	public void setFailParams(Object... values) {
+		failParams = values;
 	}
 
 }

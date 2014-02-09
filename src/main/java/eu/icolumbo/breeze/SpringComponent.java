@@ -156,31 +156,31 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 		return new Values(mapOutputFields(returnEntry, fields));
 	}
 
-	protected Object[] mapOutputFields(Object result, String[] fields)
+	protected Object[] mapOutputFields(Object returnEntry, String[] fields)
 	throws InvocationTargetException, IllegalAccessException {
 		int i = fields.length;
 		Object[] output = new Object[i];
 
-		if (result instanceof Map) {
-			Map<?,?> map = (Map<?,?>) result;
+		if (returnEntry instanceof Map) {
+			Map<?,?> map = (Map<?,?>) returnEntry;
 			while (--i >= 0)
 				output[i] = map.get(fields[i]);
-		} else if (result != null) {
+		} else if (returnEntry != null) {
 			while (--i >= 0) {
 				String name = fields[i];
-				PropertyDescriptor descriptor = getPropertyDescriptor(result.getClass(), name);
+				PropertyDescriptor descriptor = getPropertyDescriptor(returnEntry.getClass(), name);
 				if (descriptor == null) {
 					logger.warn("Missing property '{}' on {} for {}",
-							new Object[] {name, result.getClass(), this});
+							new Object[] {name, returnEntry.getClass(), this});
 					continue;
 				}
 				Method method = descriptor.getReadMethod();
 				if (method == null) {
 					logger.warn("Missing property '{}' getter on {} for {}",
-							new Object[] {name, result.getClass(), this});
+							new Object[] {name, returnEntry.getClass(), this});
 					continue;
 				}
-				output[i] = method.invoke(result);
+				output[i] = method.invoke(returnEntry);
 			}
 		}
 

@@ -55,9 +55,9 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 
 				TransactionMessageId messageId = new TransactionMessageId();
 				if (failSignature != null)
-					messageId.setFail(new Values(mapOutputFields(results[i], failSignature.getArguments())));
+					messageId.setFailParams(mapOutputFields(results[i], failSignature.getArguments()));
 				if (ackSignature != null)
-					messageId.setAck(new Values(mapOutputFields(results[i], ackSignature.getArguments())));
+					messageId.setAckParams(mapOutputFields(results[i], ackSignature.getArguments()));
 
 				collector.emit(streamId, entries, messageId);
 			}
@@ -85,9 +85,9 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 		if (ackMethod == null) return;
 
 		try {
-			Values values = ((TransactionMessageId) messageId).getAck();
+			Object[] values = ((TransactionMessageId) messageId).getAckParams();
 			logger.trace("Ack with: {}", values);
-			invoke(ackMethod, values.toArray());
+			invoke(ackMethod, values);
 		} catch (Exception e) {
 			logger.error("Ack notification abort", e);
 		}
@@ -98,9 +98,9 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 		if (failMethod == null) return;
 
 		try {
-			Values values = ((TransactionMessageId) messageId).getFail();
+			Object[] values = ((TransactionMessageId) messageId).getFailParams();
 			logger.trace("Fail with: {}", values);
-			invoke(failMethod, values.toArray());
+			invoke(failMethod, values);
 		} catch (Exception e) {
 			logger.error("Fail notification abort", e);
 		}
