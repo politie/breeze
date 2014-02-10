@@ -14,8 +14,8 @@ import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.context.support.AbstractXmlApplicationContext;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
-import org.springframework.test.util.ReflectionTestUtils;
 
+import java.lang.reflect.Field;
 import java.nio.charset.Charset;
 import java.util.Map;
 
@@ -120,16 +120,18 @@ public class BeanDefinitionTest extends AbstractXmlApplicationContext {
 	public void transactions() throws Exception {
 		beansXml = "<breeze:topology id='t1'>" +
 				"<breeze:spout id='s1' beanType='eu.icolumbo.breeze.TestBean' signature='ping()' outputFields='feed'>" +
-				"<breeze:transaction ack='testMethodA(a)' fail='testMethodB(b)'/> </breeze:spout>" +
+				"  <breeze:transaction ack='ok()' fail='retry()'/>" +
+				"</breeze:spout>" +
 				"</breeze:topology>";
 		refresh();
 
 		SpringSpout spout = getBean(SpringSpout.class);
-
-		assertEquals("testMethodA", ((FunctionSignature) ReflectionTestUtils.getField(spout,
-				"ackSignature")).getFunction());
-		assertEquals("testMethodB", ((FunctionSignature) ReflectionTestUtils.getField(spout,
-				"failSignature")).getFunction());
+		Field ackField = spout.getClass().getDeclaredField("ackSignature");
+		Field failField = spout.getClass().getDeclaredField("failSignature");
+		ackField.setAccessible(true);
+		failField.setAccessible(true);
+		assertEquals("ok", ((FunctionSignature) ackField.get(spout)).getFunction());
+		assertEquals("retry", ((FunctionSignature) failField.get(spout)).getFunction());
 	}
 
 	@Override
