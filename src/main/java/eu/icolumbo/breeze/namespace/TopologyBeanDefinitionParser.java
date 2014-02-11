@@ -15,6 +15,8 @@ import org.springframework.beans.factory.xml.AbstractBeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.w3c.dom.Element;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.StringTokenizer;
 
 import static org.springframework.util.StringUtils.hasText;
@@ -80,6 +82,11 @@ public class TopologyBeanDefinitionParser extends AbstractBeanDefinitionParser {
 		builder.addConstructorArgValue(tokenize(element.getAttribute("outputFields")));
 		builder.addPropertyValue("parallelism", Integer.valueOf(element.getAttribute("parallelism")));
 		builder.addPropertyValue("scatterOutput", Boolean.valueOf(element.getAttribute("scatterOutput")));
+
+		Map<String,String> outputBinding = new HashMap<>();
+		for (Element field : getChildElementsByTagName(element, "field"))
+			outputBinding.put(field.getAttribute("name"), field.getAttribute("expression"));
+		builder.addPropertyValue("outputBinding", outputBinding);
 
 		AbstractBeanDefinition definition = builder.getBeanDefinition();
 

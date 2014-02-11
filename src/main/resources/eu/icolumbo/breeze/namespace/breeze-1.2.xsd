@@ -23,7 +23,7 @@
 				<xs:sequence maxOccurs="unbounded">
 					<xs:choice>
 						<xs:element name="spout" type="spout_t"/>
-						<xs:element name="rpc" type="rpc_t"/>
+						<xs:element name="rpc" type="bound_function_t"/>
 					</xs:choice>
 					<xs:element name="bolt" type="bolt_t" minOccurs="0" maxOccurs="unbounded"/>
 				</xs:sequence>
@@ -34,8 +34,8 @@
 	<xs:complexType name="spout_t">
 		<xs:complexContent>
 			<xs:extension base="component_t">
-				<xs:sequence minOccurs="0" maxOccurs="1">
-					<xs:element name="transaction" type="transaction_t"/>
+				<xs:sequence>
+					<xs:element name="transaction" type="transaction_t" minOccurs="0"/>
 				</xs:sequence>
 			</xs:extension>
 		</xs:complexContent>
@@ -51,7 +51,10 @@
 
 	<xs:complexType name="component_t" abstract="true">
 		<xs:complexContent>
-			<xs:extension base="beans:identifiedType">
+			<xs:extension base="bound_function_t">
+				<xs:choice minOccurs="0" maxOccurs="unbounded">
+					<xs:element name="field" type="field_binding_t"/>
+				</xs:choice>
 				<xs:attribute name="beanType" type="xs:string" use="required">
 					<xs:annotation>
 						<xs:documentation source="java:java.lang.Class">
@@ -64,24 +67,29 @@
 						</xs:appinfo>
 					</xs:annotation>
 				</xs:attribute>
-				<xs:attributeGroup ref="functionAttributes"/>
 				<xs:attribute name="scatterOutput" type="xs:boolean" default="false"/>
 			</xs:extension>
 		</xs:complexContent>
 	</xs:complexType>
 
-	<xs:complexType name="rpc_t">
-		<xs:attributeGroup ref="functionAttributes"/>
+	<xs:complexType name="bound_function_t">
+		<xs:complexContent>
+			<xs:extension base="beans:identifiedType">
+				<xs:attribute name="signature" type="xs:string" use="required"/>
+				<xs:attribute name="outputFields" type="xs:NMTOKENS"/>
+				<xs:attribute name="parallelism" type="xs:positiveInteger" default="1"/>
+			</xs:extension>
+		</xs:complexContent>
 	</xs:complexType>
 
-	<xs:attributeGroup name="functionAttributes">
-		<xs:attribute name="signature" type="xs:string" use="required"/>
-		<xs:attribute name="outputFields" type="xs:NMTOKENS"/>
-		<xs:attribute name="parallelism" type="xs:positiveInteger" default="1"/>
-	</xs:attributeGroup>
+	<xs:complexType name="field_binding_t">
+		<xs:attribute name="name" type="xs:NMTOKEN" use="required"/>
+		<xs:attribute name="expression" type="xs:string" use="required"/>
+	</xs:complexType>
 
 	<xs:complexType name="transaction_t">
 		<xs:attribute name="ack" type="xs:string"/>
 		<xs:attribute name="fail" type="xs:string"/>
 	</xs:complexType>
+
 </xs:schema>

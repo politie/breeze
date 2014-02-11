@@ -2,6 +2,7 @@ package eu.icolumbo.breeze.namespace;
 
 import eu.icolumbo.breeze.FunctionSignature;
 import eu.icolumbo.breeze.SpringBolt;
+import eu.icolumbo.breeze.SpringComponent;
 import eu.icolumbo.breeze.SpringSpout;
 
 import backtype.storm.generated.Bolt;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.context.support.AbstractXmlApplicationContext;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
+import org.springframework.expression.Expression;
 
 import java.lang.reflect.Field;
 import java.nio.charset.Charset;
@@ -117,19 +119,23 @@ public class BeanDefinitionTest extends AbstractXmlApplicationContext {
 	}
 
 	@Test
-	public void transactions() throws Exception {
+	public void bindings() throws Exception {
 		beansXml = "<breeze:topology id='t1'>" +
 				"<breeze:spout id='s1' beanType='eu.icolumbo.breeze.TestBean' signature='ping()' outputFields='feed'>" +
+				"  <breeze:field name='feed' expression='#root.length()'/>" +
 				"  <breeze:transaction ack='ok()' fail='retry()'/>" +
 				"</breeze:spout>" +
 				"</breeze:topology>";
 		refresh();
 
 		SpringSpout spout = getBean(SpringSpout.class);
+		Field bindingField = SpringComponent.class.getDeclaredField("outputBinding");
 		Field ackField = spout.getClass().getDeclaredField("ackSignature");
 		Field failField = spout.getClass().getDeclaredField("failSignature");
+		bindingField.setAccessible(true);
 		ackField.setAccessible(true);
 		failField.setAccessible(true);
+		assertEquals("#root.length()", ((Map<String,Expression>) bindingField.get(spout)).get("feed").getExpressionString());
 		assertEquals("ok", ((FunctionSignature) ackField.get(spout)).getFunction());
 		assertEquals("retry", ((FunctionSignature) failField.get(spout)).getFunction());
 	}

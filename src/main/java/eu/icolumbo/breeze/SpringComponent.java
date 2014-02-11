@@ -40,6 +40,7 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 
 	private final FunctionSignature inputSignature;
 	private final String[] outputFields;
+	private final Map<String,Expression> outputBinding = new HashMap<>();
 
 	private String outputStreamId;
 	private boolean scatterOutput;
@@ -49,7 +50,6 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 	private transient String id;
 	private transient ApplicationContext spring;
 	private transient Method method;
-	private transient final Map<String,Expression> outputBinding = new HashMap<>();
 
 
 	/**
@@ -210,6 +210,16 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 	@Override
 	public String[] getOutputFields() {
 		return outputFields;
+	}
+
+	/**
+	 * Sets expressions per field.
+	 * @see #addOutputBinding(String, String)
+	 */
+	public void setOutputBinding(Map<String,String> value) {
+		outputBinding.clear();
+		for (Map.Entry<String,String> entry : value.entrySet())
+			addOutputBinding(entry.getKey(), entry.getValue());
 	}
 
 	/**
