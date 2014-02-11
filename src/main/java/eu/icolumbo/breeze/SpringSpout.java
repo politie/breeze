@@ -19,6 +19,7 @@ import java.util.Map;
 public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 
 	private static final Logger logger = LoggerFactory.getLogger(SpringSpout.class);
+	private static final long serialVersionUID = 8;
 
 	private SpoutOutputCollector collector;
 

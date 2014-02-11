@@ -23,6 +23,7 @@ import java.util.Map;
 public class SpringBolt extends SpringComponent implements ConfiguredBolt {
 
 	private static final Logger logger = LoggerFactory.getLogger(SpringBolt.class);
+	private static final long serialVersionUID = 8;
 
 	private OutputCollector collector;
 
