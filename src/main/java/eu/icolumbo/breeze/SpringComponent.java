@@ -8,17 +8,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.expression.Expression;
+import org.springframework.expression.spel.SpelEvaluationException;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 
-import java.beans.PropertyDescriptor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 import static backtype.storm.utils.Utils.DEFAULT_STREAM_ID;
 import static java.lang.String.format;
-import static org.springframework.beans.BeanUtils.getPropertyDescriptor;
 
 
 /**
@@ -29,6 +32,7 @@ import static org.springframework.beans.BeanUtils.getPropertyDescriptor;
 public abstract class SpringComponent implements ConfiguredComponent, ApplicationContextAware {
 
 	private static final Logger logger = LoggerFactory.getLogger(SpringSpout.class);
+	private static final SpelExpressionParser expressionParser = new SpelExpressionParser();
 	private static final long serialVersionUID = 3;
 	static final Values[] EMPTY_ARRAY = {};
 
@@ -45,6 +49,7 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 	private transient String id;
 	private transient ApplicationContext spring;
 	private transient Method method;
+	private transient final Map<String,Expression> outputBinding = new HashMap<>();
 
 
 	/**
@@ -146,39 +151,25 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 		return returnEntries;
 	}
 
-	protected Values getMapping(Object returnEntry, String[] fields)
-	throws InvocationTargetException, IllegalAccessException {
-		if (fields.length == 1)
-			return new Values(returnEntry);
-
+	protected Values getMapping(Object returnEntry, String[] fields) {
 		return new Values(mapOutputFields(returnEntry, fields));
 	}
 
-	protected Object[] mapOutputFields(Object returnEntry, String[] fields)
-	throws InvocationTargetException, IllegalAccessException {
+	protected Object[] mapOutputFields(Object returnEntry, String[] fields) {
+		StandardEvaluationContext context = new StandardEvaluationContext(returnEntry);
+
 		int i = fields.length;
 		Object[] output = new Object[i];
-
-		if (returnEntry instanceof Map) {
-			Map<?,?> map = (Map<?,?>) returnEntry;
-			while (--i >= 0)
-				output[i] = map.get(fields[i]);
-		} else if (returnEntry != null) {
-			while (--i >= 0) {
-				String name = fields[i];
-				PropertyDescriptor descriptor = getPropertyDescriptor(returnEntry.getClass(), name);
-				if (descriptor == null) {
-					logger.warn("Missing property '{}' on {} for {}",
-							new Object[] {name, returnEntry.getClass(), this});
-					continue;
-				}
-				Method method = descriptor.getReadMethod();
-				if (method == null) {
-					logger.warn("Missing property '{}' getter on {} for {}",
-							new Object[] {name, returnEntry.getClass(), this});
-					continue;
-				}
-				output[i] = method.invoke(returnEntry);
+		while (--i >= 0) try {
+			Expression spel = getOutputBinding(fields[i]);
+			output[i] = spel.getValue(context);
+		} catch (SpelEvaluationException e) {
+			switch (e.getMessageCode()) {
+				case PROPERTY_OR_FIELD_NOT_READABLE:
+					logger.info(e.getMessage());
+					break;
+				default:
+					throw e;
 			}
 		}
 
@@ -219,6 +210,32 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 	@Override
 	public String[] getOutputFields() {
 		return outputFields;
+	}
+
+	/**
+	 * Registers an expression for a field.
+	 * @param field the name.
+	 * @param expression the SpEL definition.
+	 */
+	public void addOutputBinding(String field, String expression) {
+		logger.debug("Field {} bound as #{{}}", field, expression);
+		Expression spel = expressionParser.parseExpression(expression);
+		outputBinding.put(field, spel);
+	}
+
+	private Expression getOutputBinding(String field) {
+		Expression binding = outputBinding.get(field);
+		if (binding == null) {
+			addOutputBinding(field, getDefaultExpression(field));
+			binding = outputBinding.get(field);
+		}
+		return binding;
+	}
+
+	private String getDefaultExpression(String field) {
+		if (outputFields.length == 1 && outputFields[0].equals(field))
+			return "#root";
+		return "#root?." + field;
 	}
 
 	/**

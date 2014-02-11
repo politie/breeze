@@ -14,16 +14,18 @@ import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.context.ApplicationContext;
+import org.springframework.expression.spel.SpelEvaluationException;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.doReturn;
@@ -34,6 +36,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
 
 /**
@@ -59,7 +62,7 @@ public class SpringBoltTest {
 	@Mock
 	ApplicationContext applicationContextMock;
 
-	Map<String,Object> stormConf = new HashMap();
+	Map<String,Object> stormConf = new HashMap<>();
 
 	@Captor
 	ArgumentCaptor<Fields> outputFieldsCaptor;
@@ -73,185 +76,94 @@ public class SpringBoltTest {
 	}
 
 	private void run(SpringBolt subject) {
-		run(subject, null);
-	}
-
-	private void run(SpringBolt subject, String stream) {
-		if (stream == null)
-			stream = "default";
-		else
-			subject.setOutputStreamId(stream);
-
 		subject.setApplicationContext(applicationContextMock);
 		subject.prepare(stormConf, topologyContextMock, outputCollectorMock);
-
 		subject.declareOutputFields(outputFieldsDeclarerMock);
-		verify(outputFieldsDeclarerMock).declareStream(eq(stream), outputFieldsCaptor.capture());
-
 		subject.execute(tupleMock);
 	}
 
+	/**
+	 * Tests simple String in / String out.
+	 * - set custom output stream
+	 * - default not anchored
+	 */
 	@Test
 	public void pipe() {
 		List<Object> expected = asList((Object) "Hello World!");
 		doReturn(expected.get(0)).when(tupleMock).getValueByField("in");
+
 		SpringBolt subject = new SpringBolt(TestBean.class, "echo(in)", "out");
-
+		subject.setOutputStreamId("deep");
 		run(subject);
+
+		verify(outputFieldsDeclarerMock).declareStream(eq("deep"), outputFieldsCaptor.capture());
 		assertEquals(asList("out"), outputFieldsCaptor.getValue().toList());
-		verify(outputCollectorMock).emit("default", tupleMock, expected);
-		verify(outputCollectorMock).ack(tupleMock);
-		verifyNoMoreInteractions(outputCollectorMock);
-	}
 
-	@Test
-	public void drainUnanchoredCustomStream() {
-		List<String> expectedValues = asList("Hello", "World");
-		List<Object> expected = asList((Object) expectedValues);
-		doReturn(expectedValues.get(0)).when(tupleMock).getValueByField("a");
-		doReturn(expectedValues.get(1)).when(tupleMock).getValueByField("b");
-		SpringBolt subject = new SpringBolt(TestBean.class, "list(a, b)", "y");
-		subject.setDoAnchor(false);
-
-		run(subject, "drain");
-		assertEquals(asList("y"), outputFieldsCaptor.getValue().toList());
-		verify(outputCollectorMock).emit("drain", expected);
-		verify(outputCollectorMock).ack(tupleMock);
-		verifyNoMoreInteractions(outputCollectorMock);
-	}
-
-	@Test
-	public void noInputPassThrough() {
-		List<Object> expected = asList((Object) "ping", "pong");
-		doReturn(expected.get(1)).when(tupleMock).getValueByField("ack");
-		SpringBolt subject = new SpringBolt(TestBean.class, "ping()", "out");
-		subject.setPassThroughFields("ack");
-
-		run(subject);
-		assertEquals(asList("out", "ack"), outputFieldsCaptor.getValue().toList());
-		verify(outputCollectorMock).emit("default", tupleMock, expected);
-		verify(outputCollectorMock).ack(tupleMock);
-		verifyNoMoreInteractions(outputCollectorMock);
-	}
-
-	@Test
-	public void noOutputPassThrough() {
-		List<Object> expected = asList((Object) 4);
-		doReturn(expected.get(0)).when(tupleMock).getValueByField("n");
-		SpringBolt subject = new SpringBolt(TestBean.class, "nop()");
-		subject.setPassThroughFields("n");
-
-		run(subject);
-		assertEquals(asList("n"), outputFieldsCaptor.getValue().toList());
-		verify(outputCollectorMock).emit("default", tupleMock, expected);
-		verify(outputCollectorMock).ack(tupleMock);
-		verifyNoMoreInteractions(outputCollectorMock);
-	}
-
-	@Test
-	public void noIO() {
-		SpringBolt subject = new SpringBolt(TestBean.class, "nop()");
-
-		run(subject);
-		assertEquals(asList(), outputFieldsCaptor.getValue().toList());
-		verify(outputCollectorMock).ack(tupleMock);
-		verifyNoMoreInteractions(outputCollectorMock);
-	}
-
-	@Test
-	public void nullObjectProperties() {
-		List<Object> expected = asList(null, null, null);
-		SpringBolt subject = new SpringBolt(TestBean.class, "nullObject()", "x", "y", "z");
-
-		run(subject, "complex");
-		verify(outputCollectorMock).emit("complex", tupleMock, expected);
-		verify(outputCollectorMock).ack(tupleMock);
-		verifyNoMoreInteractions(outputCollectorMock);
-	}
-
-	@Test
-	public void multipleOutputPassThrough() {
-		List<Object> expected = asList((Object) "check", "double", "again");
-		doReturn(expected.get(0)).when(tupleMock).getValueByField("a");
-		doReturn(expected.get(1)).when(tupleMock).getValueByField("b");
-		doReturn(expected.get(2)).when(tupleMock).getValueByField("c");
-		SpringBolt subject = new SpringBolt(TestBean.class, "map(a, b)", "x", "y");
-		subject.setPassThroughFields("c");
-
-		run(subject);
-		assertEquals(asList("x", "y", "c"), outputFieldsCaptor.getValue().toList());
-		verify(outputCollectorMock).emit("default", tupleMock, expected);
-		verify(outputCollectorMock).ack(tupleMock);
-		verifyNoMoreInteractions(outputCollectorMock);
-	}
-
-	@Test
-	public void scatteredArray() {
-		List<Object> expectedFirst = asList((Object) "first");
-		List<Object> expectedSecond = asList((Object) "second");
-		doReturn(expectedFirst.get(0)).when(tupleMock).getValueByField("a");
-		doReturn(expectedSecond.get(0)).when(tupleMock).getValueByField("b");
-		SpringBolt subject = new SpringBolt(TestBean.class, "array(a, b)", "x");
-		subject.setScatterOutput(true);
-
-		run(subject);
 		InOrder order = inOrder(outputCollectorMock);
-		order.verify(outputCollectorMock).emit("default", tupleMock, expectedFirst);
-		order.verify(outputCollectorMock).emit("default", tupleMock, expectedSecond);
+		order.verify(outputCollectorMock).emit("deep", tupleMock, expected);
 		order.verify(outputCollectorMock).ack(tupleMock);
-		verifyNoMoreInteractions(outputCollectorMock);
+		order.verifyNoMoreInteractions();
 	}
 
+	/**
+	 * Tests void in / void out with a integer pass through.
+	 * - default output stream
+	 * - set not anchored.
+	 */
 	@Test
-	public void scatteredMultipleOutputCollection() {
-		Map<?,?> first = singletonMap("x", 1);
-		TestBean.Data second = new TestBean.Data();
-		second.setMessage("Hello");
+	public void sideOperation() {
+		when(tupleMock.getValueByField("pass")).thenReturn(9);
 
-		doReturn(first).when(tupleMock).getValueByField("a");
-		doReturn(second).when(tupleMock).getValueByField("b");
-		SpringBolt subject = new SpringBolt(TestBean.class, "list(a, b)", "x", "message");
-		subject.setScatterOutput(true);
+		SpringBolt subject = new SpringBolt(TestBean.class, "nop()");
+		subject.setPassThroughFields("pass");
 		subject.setDoAnchor(false);
-
-		run(subject, "collect");
-		InOrder order = inOrder(outputCollectorMock);
-		order.verify(outputCollectorMock).emit("collect", asList((Object) 1, null));
-		order.verify(outputCollectorMock).emit("collect", asList((Object) null, "Hello"));
-		order.verify(outputCollectorMock).ack(tupleMock);
-		verifyNoMoreInteractions(outputCollectorMock);
-	}
-
-	@Test
-	public void scatterPass() {
-		List<Object> expected = asList((Object) "ping");
-		SpringBolt subject = new SpringBolt(TestBean.class, "ping()", "y");
-		subject.setScatterOutput(true);
-
 		run(subject);
-		verify(outputCollectorMock).emit("default", tupleMock, expected);
-		verify(outputCollectorMock).ack(tupleMock);
-		verifyNoMoreInteractions(outputCollectorMock);
+
+		verify(outputFieldsDeclarerMock).declareStream(eq("default"), outputFieldsCaptor.capture());
+		assertEquals(asList("pass"), outputFieldsCaptor.getValue().toList());
+
+		InOrder order = inOrder(outputCollectorMock);
+		order.verify(outputCollectorMock).emit("default", asList((Object) 9));
+		order.verify(outputCollectorMock).ack(tupleMock);
+		order.verifyNoMoreInteractions();
 	}
 
+	/**
+	 * Tests a null return.
+	 */
 	@Test
 	public void scatterFilter() {
 		SpringBolt subject = new SpringBolt(TestBean.class, "nullObject()", "y");
 		subject.setScatterOutput(true);
+		run(subject);
 
-		run(subject, "filtered");
 		verify(outputCollectorMock).ack(tupleMock);
 		verifyNoMoreInteractions(outputCollectorMock);
 	}
 
+	/**
+	 * Tests multiple in / scattered out in combination with a pass though field.
+	 */
 	@Test
-	public void scatterNull() {
-		SpringBolt subject = new SpringBolt(TestBean.class, "nullArray()", "y", "z");
-		subject.setScatterOutput(true);
+	public void multiplexPassThroughWithScatter() {
+		when(tupleMock.getValueByField("a")).thenReturn("first");
+		when(tupleMock.getValueByField("b")).thenReturn("second");
+		when(tupleMock.getValueByField("c")).thenReturn("routine");
 
+		SpringBolt subject = new SpringBolt(TestBean.class, "array(a, b)", "y");
+		subject.setPassThroughFields("c");
+		subject.setScatterOutput(true);
+		subject.setDoAnchor(false);
 		run(subject);
-		verify(outputCollectorMock).ack(tupleMock);
-		verifyNoMoreInteractions(outputCollectorMock);
+
+		verify(outputFieldsDeclarerMock).declareStream(eq("default"), outputFieldsCaptor.capture());
+		assertEquals(asList("y", "c"), outputFieldsCaptor.getValue().toList());
+
+		InOrder order = inOrder(outputCollectorMock);
+		order.verify(outputCollectorMock).emit("default", asList((Object) "first", "routine"));
+		order.verify(outputCollectorMock).emit("default", asList((Object) "second", "routine"));
+		order.verify(outputCollectorMock).ack(tupleMock);
+		order.verifyNoMoreInteractions();
 	}
 	
 	@Test(expected=IllegalArgumentException.class)
@@ -261,11 +173,12 @@ public class SpringBoltTest {
 	}
 
 	@Test
-	public void error() {
+	public void executionException() {
 		SpringBolt subject = new SpringBolt(TestBean.class, "clone()");
 		run(subject);
 		verify(outputCollectorMock, never()).ack(tupleMock);
 		verify(outputCollectorMock).fail(tupleMock);
+		verify(outputCollectorMock).reportError(any(CloneNotSupportedException.class));
 	}
 
 	@Test
@@ -285,17 +198,35 @@ public class SpringBoltTest {
 	}
 
 	@Test
+	public void configurationError() {
+		SpringBolt subject = new SpringBolt(TestBean.class, "ping()", "out");
+		subject.addOutputBinding("out", "unknown(99)");
+		try {
+			run(subject);
+			fail("no exception");
+		} catch (SpelEvaluationException ignored) {
+		}
+
+		verifyZeroInteractions(outputCollectorMock);
+	}
+
+	@Test
 	public void cleanup() {
 		new SpringBolt(TestBean.class, "nop()").cleanup();
 	}
 
+	/**
+	 * Tests the prototyping-context.xml setup with Spring.
+	 */
 	@Test
 	public void prototypeIntegrationRun() {
 		stormConf.put("topology.name", "prototyping");
+
 		SpringBolt subject = new SpringBolt(TestBean.class, "hashCode()", "hash");
 		subject.prepare(stormConf, topologyContextMock, outputCollectorMock);
 		subject.execute(tupleMock);
 		subject.execute(tupleMock);
+
 		ArgumentCaptor<List> captor = ArgumentCaptor.forClass(List.class);
 		verify(outputCollectorMock, times(2)).emit(eq("default"),
 				same(tupleMock), captor.capture());

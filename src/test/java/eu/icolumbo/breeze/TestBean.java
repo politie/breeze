@@ -1,11 +1,5 @@
 package eu.icolumbo.breeze;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static java.util.Arrays.asList;
-
 
 /**
  * @author Pascal S. de Kloe
@@ -37,10 +31,6 @@ public class TestBean {
 
 		public void setSetterOnly(Object value) {
 		}
-
-		private Object getPrivateGetter() {
-			return new Object();
-		}
 	}
 
 
@@ -59,30 +49,8 @@ public class TestBean {
 		return new String[] {a, b};
 	}
 
-	public List<Object> list(Object a, Object b) {
-		return asList(a, b);
-	}
-
-	public Map<String,String> map(String a, String b) {
-		Map<String,String> result = new HashMap<>();
-		result.put("x", a);
-		result.put("y", b);
-		return result;
-	}
-
 	public Data nullObject() {
 		return null;
-	}
-
-	public Data[] nullArray() {
-		return null;
-	}
-
-	public Data greet(Number number) {
-		Data data = new Data();
-		data.setId(number.intValue());
-		data.setMessage(getGreeting() + " " + number);
-		return data;
 	}
 
 	public String getGreeting() {
