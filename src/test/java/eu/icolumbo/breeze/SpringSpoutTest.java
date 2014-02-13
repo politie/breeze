@@ -10,21 +10,30 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.context.ApplicationContext;
 
+import java.io.BufferedReader;
+import java.io.EOFException;
+import java.io.IOException;
+import java.nio.channels.AcceptPendingException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
 
 /**
@@ -125,7 +134,7 @@ public class SpringSpoutTest {
 	}
 
 	@Test
-	public void error() throws Exception {
+	public void operaionException() throws Exception {
 		SpringSpout subject = new SpringSpout(TestBean.class, "clone()", "copy");
 
 		subject.open(stormConf, contextMock, collectorMock);
@@ -133,6 +142,31 @@ public class SpringSpoutTest {
 
 		verify(collectorMock).reportError(any(CloneNotSupportedException.class));
 		verifyNoMoreInteractions(collectorMock);
+	}
+
+	@Test
+	public void operationDelay() throws Exception {
+		long acceptDelay = 20;
+		long ioDelay = 80;
+
+		BufferedReader bean = mock(BufferedReader.class);
+		doReturn(bean).when(applicationContextMock).getBean(bean.getClass());
+		when(bean.readLine()).thenThrow(new AcceptPendingException(), new EOFException());
+
+		SpringSpout subject = new SpringSpout(bean.getClass(), "readLine()", "line");
+		subject.setApplicationContext(applicationContextMock);
+		subject.addDelayException(AcceptPendingException.class, acceptDelay);
+		subject.addDelayException(IOException.class, ioDelay);
+		subject.open(stormConf, contextMock, collectorMock);
+
+		long start = System.currentTimeMillis();
+		subject.nextTuple();
+		long acceptEnd = System.currentTimeMillis();
+		subject.nextTuple();
+		long end = System.currentTimeMillis();
+		verifyZeroInteractions(collectorMock);
+		assertTrue("accept delay", acceptDelay <= acceptEnd - start);
+		assertTrue("io delay", acceptDelay <= end - acceptEnd);
 	}
 
 	@Test

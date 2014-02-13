@@ -35,6 +35,7 @@
 		<xs:complexContent>
 			<xs:extension base="component_t">
 				<xs:sequence>
+					<xs:element name="exception" type="delay_binding_t" minOccurs="0" maxOccurs="unbounded"/>
 					<xs:element name="transaction" type="transaction_t" minOccurs="0"/>
 				</xs:sequence>
 			</xs:extension>
@@ -85,6 +86,28 @@
 	<xs:complexType name="field_binding_t">
 		<xs:attribute name="name" type="xs:NMTOKEN" use="required"/>
 		<xs:attribute name="expression" type="xs:string" use="required"/>
+	</xs:complexType>
+
+	<xs:complexType name="delay_binding_t">
+		<xs:attribute name="type" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation source="java:java.lang.Class">
+					The fully qualified name of the exception's class.
+				</xs:documentation>
+				<xs:appinfo>
+					<tool:annotation kind="direct">
+						<tool:expected-type type="java.lang.Class"/>
+					</tool:annotation>
+				</xs:appinfo>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="delay" type="xs:positiveInteger" default="100">
+			<xs:annotation>
+				<xs:documentation>
+					The number of milliseconds to extend the abort.
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
 	</xs:complexType>
 
 	<xs:complexType name="transaction_t">

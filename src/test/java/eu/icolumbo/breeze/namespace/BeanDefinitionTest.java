@@ -12,11 +12,15 @@ import backtype.storm.generated.SpoutSpec;
 import backtype.storm.generated.StormTopology;
 import org.junit.Test;
 import org.springframework.beans.factory.BeanCreationException;
+import org.springframework.beans.factory.BeanDefinitionStoreException;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.beans.factory.support.BeanDefinitionValidationException;
 import org.springframework.context.support.AbstractXmlApplicationContext;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.expression.Expression;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.charset.Charset;
 import java.util.Map;
@@ -123,21 +127,47 @@ public class BeanDefinitionTest extends AbstractXmlApplicationContext {
 		beansXml = "<breeze:topology id='t1'>" +
 				"<breeze:spout id='s1' beanType='eu.icolumbo.breeze.TestBean' signature='ping()' outputFields='feed'>" +
 				"  <breeze:field name='feed' expression='#root.length()'/>" +
+				"  <breeze:exception type='java.io.IOException' delay='2000'/>" +
 				"  <breeze:transaction ack='ok()' fail='retry()'/>" +
 				"</breeze:spout>" +
 				"</breeze:topology>";
 		refresh();
 
 		SpringSpout spout = getBean(SpringSpout.class);
-		Field bindingField = SpringComponent.class.getDeclaredField("outputBinding");
-		Field ackField = spout.getClass().getDeclaredField("ackSignature");
-		Field failField = spout.getClass().getDeclaredField("failSignature");
-		bindingField.setAccessible(true);
-		ackField.setAccessible(true);
-		failField.setAccessible(true);
-		assertEquals("#root.length()", ((Map<String,Expression>) bindingField.get(spout)).get("feed").getExpressionString());
-		assertEquals("ok", ((FunctionSignature) ackField.get(spout)).getFunction());
-		assertEquals("retry", ((FunctionSignature) failField.get(spout)).getFunction());
+		Map<String,Expression> outputBinding = read(spout, SpringComponent.class.getDeclaredField("outputBinding"));
+		assertEquals("#root.length()", outputBinding.get("feed").getExpressionString());
+
+		Map<Class<?>,Long> delayExceptions = read(spout, spout.getClass().getDeclaredField("delayExceptions"));
+		assertEquals(new Long(2000), delayExceptions.get(IOException.class));
+
+		FunctionSignature ackSignature = read(spout, spout.getClass().getDeclaredField("ackSignature"));
+		assertEquals("ok", ackSignature.getFunction());
+
+		FunctionSignature failSignature = read(spout, spout.getClass().getDeclaredField("failSignature"));
+		assertEquals("retry", failSignature.getFunction());
+	}
+
+	private static <T> T read(Object source, Field f) throws Exception {
+		f.setAccessible(true);
+		return (T) f.get(source);
+	}
+
+	@Test
+	public void unknownExceptionClass() throws Exception {
+		beansXml = "<breeze:topology id='t1'>" +
+				"<breeze:spout id='s1' beanType='eu.icolumbo.breeze.TestBean' signature='ping()' outputFields='feed'>" +
+				"  <breeze:exception type='com.example.DoesNotExist' delay='2000'/>" +
+				"</breeze:spout>" +
+				"</breeze:topology>";
+
+		try {
+			refresh();
+			fail("no exception");
+		} catch (BeanDefinitionStoreException e) {
+			Throwable cause = e.getCause();
+			assertNotNull("cause", cause);
+			assertEquals("No such class: com.example.DoesNotExist", cause.getMessage());
+		}
 	}
 
 	@Override

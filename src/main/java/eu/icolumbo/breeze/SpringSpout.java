@@ -3,11 +3,13 @@ package eu.icolumbo.breeze;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.tuple.Values;
+import backtype.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.Map;
 
 
@@ -23,6 +25,7 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 
 	private SpoutOutputCollector collector;
 
+	private final Map<Class<? extends Exception>,Long> delayExceptions = new HashMap<>();
 	private FunctionSignature ackSignature, failSignature;
 	private transient Method ackMethod, failMethod;
 
@@ -62,7 +65,18 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 				collector.emit(streamId, entries, messageId);
 			}
 		} catch (InvocationTargetException e) {
-			collector.reportError(e.getCause());
+			Throwable cause = e.getCause();
+			Class<? extends Throwable> causeType = cause.getClass();
+			for (Map.Entry<Class<? extends Exception>,Long> option : delayExceptions.entrySet()) {
+				if (option.getKey().isAssignableFrom(causeType)) {
+					Long delay = option.getValue();
+					logger.info("{} triggers an {}ms delay", causeType.getSimpleName(), delay);
+					Utils.sleep(delay);
+					return;
+				}
+			}
+
+			collector.reportError(cause);
 		} catch (IllegalAccessException e) {
 			throw new SecurityException(e);
 		}
@@ -130,6 +144,25 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 
 	public void setFailSignature(String fail) {
 		this.failSignature = FunctionSignature.valueOf(fail);
+	}
+
+	/**
+	 * Sets the delays per exception.
+	 * @see #addDelayException(Class, long)
+	 */
+	public void setDelayExceptions(Map<Class<? extends Exception>,Long> value) {
+		delayExceptions.clear();
+		for (Map.Entry<Class<? extends Exception>,Long> entry : value.entrySet())
+			addDelayException(entry.getKey(), entry.getValue());
+	}
+
+	/**
+	 * Specifies an exception to extend the abort.
+	 * @param type the exception match.
+	 * @param delay the number of milliseconds.
+	 */
+	public void addDelayException(Class<? extends Exception> type, long delay) {
+		delayExceptions.put(type, delay);
 	}
 
 }

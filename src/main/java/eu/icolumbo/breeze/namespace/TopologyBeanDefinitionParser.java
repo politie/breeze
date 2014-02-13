@@ -10,6 +10,7 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
+import org.springframework.beans.factory.support.BeanDefinitionValidationException;
 import org.springframework.beans.factory.support.ManagedList;
 import org.springframework.beans.factory.xml.AbstractBeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
@@ -19,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.StringTokenizer;
 
+import static org.springframework.beans.factory.support.BeanDefinitionBuilder.rootBeanDefinition;
 import static org.springframework.util.StringUtils.hasText;
 import static org.springframework.util.xml.DomUtils.getChildElementByTagName;
 import static org.springframework.util.xml.DomUtils.getChildElementsByTagName;
@@ -31,50 +33,66 @@ import static org.springframework.util.xml.DomUtils.getChildElementsByTagName;
 public class TopologyBeanDefinitionParser extends AbstractBeanDefinitionParser {
 
 	@Override
-	protected AbstractBeanDefinition parseInternal(Element element, ParserContext context) {
+	protected AbstractBeanDefinition parseInternal(Element root, ParserContext context) {
 		BeanDefinitionRegistry registry = context.getRegistry();
 
 		ManagedList<BeanDefinition> spoutDefinitions = new ManagedList<>();
-		for (Element spoutElement : getChildElementsByTagName(element, "spout")) {
-			BeanDefinitionBuilder builder = BeanDefinitionBuilder.rootBeanDefinition(SpringSpout.class);
-			spoutDefinitions.add(define(builder, spoutElement, registry));
+		for (Element spout : getChildElementsByTagName(root, "spout")) {
+			BeanDefinitionBuilder builder = rootBeanDefinition(SpringSpout.class);
 
-			Element transElement = getChildElementByTagName(spoutElement, "transaction");
-			if (transElement != null) {
-				builder.addPropertyValue("ackSignature", transElement.getAttribute("ack"));
-				builder.addPropertyValue("failSignature", transElement.getAttribute("fail"));
+			Map<Class<? extends Exception>,Long> delayExceptions = new HashMap<>();
+			for (Element exception : getChildElementsByTagName(spout, "exception")) {
+				String className = exception.getAttribute("type");
+				Class<? extends Exception> type = null;
+				try {
+					type = (Class<? extends Exception>) Class.forName(className);
+				} catch (ClassNotFoundException e) {
+					String msg = "No such class: " + className;
+					throw new IllegalStateException(msg, e);
+				}
+				delayExceptions.put(type, Long.valueOf(exception.getAttribute("delay")));
 			}
+			builder.addPropertyValue("delayExceptions", delayExceptions);
+
+			Element transaction = getChildElementByTagName(spout, "transaction");
+			if (transaction != null) {
+				builder.addPropertyValue("ackSignature", transaction.getAttribute("ack"));
+				builder.addPropertyValue("failSignature", transaction.getAttribute("fail"));
+			}
+
+			spoutDefinitions.add(define(builder, spout, registry));
 		}
 
 		ManagedList<BeanDefinition> boltDefinitions = new ManagedList<>();
-		for (Element boltElement : getChildElementsByTagName(element, "bolt")) {
-			BeanDefinitionBuilder builder = BeanDefinitionBuilder.rootBeanDefinition(SpringBolt.class);
-			builder.addPropertyValue("doAnchor", Boolean.valueOf(element.getAttribute("anchor")));
-			boltDefinitions.add(define(builder, boltElement, registry));
+		for (Element bolt : getChildElementsByTagName(root, "bolt")) {
+			BeanDefinitionBuilder builder = rootBeanDefinition(SpringBolt.class);
+			builder.addPropertyValue("doAnchor", Boolean.valueOf(root.getAttribute("anchor")));
+			boltDefinitions.add(define(builder, bolt, registry));
 		}
 
-		for (Element rpcElement : getChildElementsByTagName(element, "rpc")) {
-			BeanDefinitionBuilder spoutDefinitionBuilder = BeanDefinitionBuilder.rootBeanDefinition(SpringRPCRequest.class);
-			spoutDefinitionBuilder.setScope("prototype");
-			spoutDefinitionBuilder.addConstructorArgValue(rpcElement.getAttribute("signature"));
-			spoutDefinitionBuilder.addPropertyValue("parallelism", Integer.valueOf(rpcElement.getAttribute("parallelism")));
-			spoutDefinitions.add(spoutDefinitionBuilder.getBeanDefinition());
+		for (Element rpc : getChildElementsByTagName(root, "rpc")) {
+			BeanDefinitionBuilder spoutDef = rootBeanDefinition(SpringRPCRequest.class);
+			spoutDef.setScope("prototype");
+			spoutDef.addConstructorArgValue(rpc.getAttribute("signature"));
+			spoutDef.addPropertyValue("parallelism", Integer.valueOf(rpc.getAttribute("parallelism")));
+			spoutDefinitions.add(spoutDef.getBeanDefinition());
 
-			BeanDefinitionBuilder boltDefinitionBuilder = BeanDefinitionBuilder.rootBeanDefinition(SpringRPCResponse.class);
-			boltDefinitionBuilder.setScope("prototype");
-			boltDefinitionBuilder.addConstructorArgValue(rpcElement.getAttribute("signature"));
-			boltDefinitionBuilder.addConstructorArgValue(tokenize(rpcElement.getAttribute("outputFields")));
-			boltDefinitionBuilder.addPropertyValue("parallelism", Integer.valueOf(rpcElement.getAttribute("parallelism")));
-			boltDefinitions.add(boltDefinitionBuilder.getBeanDefinition());
+			BeanDefinitionBuilder boltDef = rootBeanDefinition(SpringRPCResponse.class);
+			boltDef.setScope("prototype");
+			boltDef.addConstructorArgValue(rpc.getAttribute("signature"));
+			boltDef.addConstructorArgValue(tokenize(rpc.getAttribute("outputFields")));
+			boltDef.addPropertyValue("parallelism", Integer.valueOf(rpc.getAttribute("parallelism")));
+			boltDefinitions.add(boltDef.getBeanDefinition());
 		}
 
-		BeanDefinitionBuilder builder = BeanDefinitionBuilder.rootBeanDefinition(TopologyFactoryBean.class);
+		BeanDefinitionBuilder builder = rootBeanDefinition(TopologyFactoryBean.class);
 		builder.addPropertyValue("bolts", boltDefinitions);
 		builder.addPropertyValue("spouts", spoutDefinitions);
 		return builder.getBeanDefinition();
 	}
 
-	private static BeanDefinition define(BeanDefinitionBuilder builder, Element element, BeanDefinitionRegistry registry) {
+	private static BeanDefinition
+	define(BeanDefinitionBuilder builder, Element element, BeanDefinitionRegistry registry) {
 		builder.setScope("prototype");
 
 		builder.addConstructorArgValue(element.getAttribute("beanType"));
