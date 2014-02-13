@@ -1,15 +1,20 @@
 package eu.icolumbo.breeze.namespace;
 
+import eu.icolumbo.breeze.SingletonApplicationContext;
+
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;
 import backtype.storm.generated.StormTopology;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
+import java.util.Map;
 import java.util.Properties;
 
 import static java.lang.System.err;
@@ -18,6 +23,7 @@ import static org.springframework.util.StringUtils.hasText;
 
 
 /**
+ * Storm bootstrap.
  * @author Pascal S. de Kloe
  */
 public class TopologyStarter extends Thread {
@@ -26,28 +32,34 @@ public class TopologyStarter extends Thread {
 	public static final String LOCAL_RUN_PARAM = "localRun";
 	public static final String LOCAL_RUN_DEFAULT_TIMEOUT = "10";
 
-	private final ApplicationContext spring = new ClassPathXmlApplicationContext(MAIN_CONTEXT);
+	private static final Logger logger = LoggerFactory.getLogger(TopologyStarter.class);
+	private static final String CONFIGURATION_TYPE_FIELD_SUFFIX = "_SCHEMA";
+
 	private final String ID;
-	private final Properties config = new Properties();
+	private final Properties properties;
 
 
-	public TopologyStarter(String topologyId) {
+	public TopologyStarter(String topologyId, Properties setup) {
 		super("starter-" + topologyId);
 		ID = topologyId;
+		properties = setup;
 	}
 
 	public static void main(String[] args) throws IOException {
+		logger.info("Breeze bootstrap called with {}", args);
 		if (args.length == 0) {
 			printHelp();
 			exit(1);
 		}
 
-		TopologyStarter starter = new TopologyStarter(args[0]);
-
+		Properties setup = new Properties();
 		try {
 			for (int i = 1; i < args.length; ++i) {
-				InputStream stream = new FileInputStream(args[i]);
-				starter.config.load(stream);
+				String filePath = args[i];
+				logger.debug("Configuration file {} at {}", i, filePath);
+
+				InputStream stream = new FileInputStream(filePath);
+				setup.load(stream);
 				stream.close();
 			}
 		} catch (IOException e) {
@@ -55,7 +67,7 @@ public class TopologyStarter extends Thread {
 			exit(2);
 		}
 
-		starter.start();
+		new TopologyStarter(args[0], setup).start();
 	}
 
 	private static void printHelp() {
@@ -67,17 +79,15 @@ public class TopologyStarter extends Thread {
 		err.println("OPTIONS");
 		err.println();
 		err.println("\t-D" + LOCAL_RUN_PARAM + "[=timeout]");
-		err.println("\t\tTests the topology for a number of seconds. The default is " + LOCAL_RUN_DEFAULT_TIMEOUT);
+		err.println("\t\tTests the topology locally for a number of seconds." +
+				" The default is " + LOCAL_RUN_DEFAULT_TIMEOUT);
 	}
 
 	@Override
 	public void run() {
-		config.put(Config.TOPOLOGY_NAME, ID);
-
-		// Storm needs the right type see: STORM-173
-		if(config.containsKey(Config.TOPOLOGY_WORKERS))
-			config.put(Config.TOPOLOGY_WORKERS, Integer.parseInt((String) config.get(Config.TOPOLOGY_WORKERS)));
-
+		properties.put(Config.TOPOLOGY_NAME, ID);
+		Config config = stormConfig(properties);
+		ApplicationContext spring = SingletonApplicationContext.loadXml(config, MAIN_CONTEXT);
 		try {
 			StormTopology topology = spring.getBean(ID, StormTopology.class);
 
@@ -98,6 +108,56 @@ public class TopologyStarter extends Thread {
 			e.printStackTrace();
 			exit(255);
 		}
+	}
+
+	/**
+	 * Applies type conversion where needed.
+	 * @return a copy of source ready for Storm.
+	 * @see <a href="https://issues.apache.org/jira/browse/STORM-173">Strom issue 173</a>
+	 */
+	public static Config stormConfig(Properties source) {
+		Config result = new Config();
+
+		// Check declared settings from source
+		for (Field field : result.getClass().getDeclaredFields()) {
+			if (field.getType() != String.class) continue;
+			if (field.getName().endsWith(CONFIGURATION_TYPE_FIELD_SUFFIX)) continue;
+
+			try {
+				String key = field.get(result).toString();
+				String entry = source.getProperty(key);
+				if (entry == null) continue;
+
+				String typeFieldName = field.getName() + CONFIGURATION_TYPE_FIELD_SUFFIX;
+				Field typeField = result.getClass().getDeclaredField(typeFieldName);
+				Class<?> type = (Class) typeField.get(result);
+
+				Object value = null;
+				if (type == String.class)
+					value = entry;
+				if (type == Number.class)
+					value = Integer.valueOf(entry);
+				if (type == Boolean.class)
+					value = Boolean.valueOf(entry);
+
+				if (value == null) {
+					logger.warn("No parser for key '{}' type: {}", key, type);
+					value = entry;
+				}
+				result.put(key, value);
+			} catch (Exception e) {
+				logger.debug("Interpretation failure on {}: {}", field, e);
+			}
+		}
+
+		// Copy remaining
+		for (Map.Entry<Object,Object> e : source.entrySet()) {
+			String key = e.getKey().toString();
+			if (result.containsKey(key)) continue;
+			result.put(key, e.getValue());
+		}
+
+		return result;
 	}
 
 }
