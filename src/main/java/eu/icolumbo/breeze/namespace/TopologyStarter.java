@@ -3,6 +3,7 @@ package eu.icolumbo.breeze.namespace;
 import eu.icolumbo.breeze.SingletonApplicationContext;
 
 import backtype.storm.Config;
+import backtype.storm.ConfigValidation;
 import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;
 import backtype.storm.generated.StormTopology;
@@ -14,11 +15,14 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
 import static java.lang.System.err;
 import static java.lang.System.exit;
+import static java.util.Arrays.asList;
 import static org.springframework.util.StringUtils.hasText;
 
 
@@ -34,6 +38,7 @@ public class TopologyStarter extends Thread {
 
 	private static final Logger logger = LoggerFactory.getLogger(TopologyStarter.class);
 	private static final String CONFIGURATION_TYPE_FIELD_SUFFIX = "_SCHEMA";
+	private static final String LIST_CONTINUATION_PATTERN = ",\\s*";
 
 	private final String ID;
 	private final Properties properties;
@@ -118,7 +123,7 @@ public class TopologyStarter extends Thread {
 	public static Config stormConfig(Properties source) {
 		Config result = new Config();
 
-		// Check declared settings from source
+		logger.debug("Mapping declared types for Storm properties...");
 		for (Field field : result.getClass().getDeclaredFields()) {
 			if (field.getType() != String.class) continue;
 			if (field.getName().endsWith(CONFIGURATION_TYPE_FIELD_SUFFIX)) continue;
@@ -130,22 +135,31 @@ public class TopologyStarter extends Thread {
 
 				String typeFieldName = field.getName() + CONFIGURATION_TYPE_FIELD_SUFFIX;
 				Field typeField = result.getClass().getDeclaredField(typeFieldName);
-				Class<?> type = (Class) typeField.get(result);
+				Object type = typeField.get(result);
 
+				logger.trace("Conforming key '{}' to type: {}", field, type);
 				Object value = null;
 				if (type == String.class)
 					value = entry;
-				if (type == Number.class)
+				if (type == Number.class || type == ConfigValidation.PowerOf2Validator)
 					value = Integer.valueOf(entry);
 				if (type == Boolean.class)
 					value = Boolean.valueOf(entry);
+				if (type == ConfigValidation.StringsValidator)
+					value = asList(entry.split(LIST_CONTINUATION_PATTERN));
+				if (type == ConfigValidation.NumbersValidator) {
+					List<Number> numbers = new ArrayList<>();
+					value = numbers;
+					for (String serial : entry.split(LIST_CONTINUATION_PATTERN))
+						numbers.add(Integer.valueOf(serial));
+				}
 
 				if (value == null) {
 					logger.warn("No parser for key '{}' type: {}", key, type);
 					value = entry;
 				}
 				result.put(key, value);
-			} catch (Exception e) {
+			} catch (ReflectiveOperationException e) {
 				logger.debug("Interpretation failure on {}: {}", field, e);
 			}
 		}
