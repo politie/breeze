@@ -56,8 +56,12 @@ public class TopologyBeanDefinitionParser extends AbstractBeanDefinitionParser {
 
 			Element transaction = getChildElementByTagName(spout, "transaction");
 			if (transaction != null) {
-				builder.addPropertyValue("ackSignature", transaction.getAttribute("ack"));
-				builder.addPropertyValue("failSignature", transaction.getAttribute("fail"));
+				String ack = transaction.getAttribute("ack");
+				if (hasText(ack))
+					builder.addPropertyValue("ackSignature", ack);
+				String fail = transaction.getAttribute("fail");
+				if (hasText(fail))
+					builder.addPropertyValue("failSignature", fail);
 			}
 
 			spoutDefinitions.add(define(builder, spout, registry));

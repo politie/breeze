@@ -128,7 +128,6 @@ public class BeanDefinitionTest extends AbstractXmlApplicationContext {
 				"<breeze:spout id='s1' beanType='eu.icolumbo.breeze.TestBean' signature='ping()' outputFields='feed'>" +
 				"  <breeze:field name='feed' expression='#root.length()'/>" +
 				"  <breeze:exception type='java.io.IOException' delay='2000'/>" +
-				"  <breeze:transaction ack='ok()' fail='retry()'/>" +
 				"</breeze:spout>" +
 				"</breeze:topology>";
 		refresh();
@@ -139,9 +138,33 @@ public class BeanDefinitionTest extends AbstractXmlApplicationContext {
 
 		Map<Class<?>,Long> delayExceptions = read(spout, spout.getClass().getDeclaredField("delayExceptions"));
 		assertEquals(new Long(2000), delayExceptions.get(IOException.class));
+	}
+
+	@Test
+	public void transactionAck() throws Exception {
+		beansXml = "<breeze:topology id='t1'>" +
+				"<breeze:spout id='s1' beanType='eu.icolumbo.breeze.TestBean' signature='ping()' outputFields='feed'>" +
+				"  <breeze:transaction ack='ok()'/>" +
+				"</breeze:spout>" +
+				"</breeze:topology>";
+		refresh();
+
+		SpringSpout spout = getBean(SpringSpout.class);
 
 		FunctionSignature ackSignature = read(spout, spout.getClass().getDeclaredField("ackSignature"));
 		assertEquals("ok", ackSignature.getFunction());
+	}
+
+	@Test
+	public void transactionFail() throws Exception {
+		beansXml = "<breeze:topology id='t1'>" +
+				"<breeze:spout id='s1' beanType='eu.icolumbo.breeze.TestBean' signature='ping()' outputFields='feed'>" +
+				"  <breeze:transaction fail='retry()'/>" +
+				"</breeze:spout>" +
+				"</breeze:topology>";
+		refresh();
+
+		SpringSpout spout = getBean(SpringSpout.class);
 
 		FunctionSignature failSignature = read(spout, spout.getClass().getDeclaredField("failSignature"));
 		assertEquals("retry", failSignature.getFunction());
