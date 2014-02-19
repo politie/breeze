@@ -1,16 +1,14 @@
 package eu.icolumbo.breeze.namespace;
 
 import eu.icolumbo.breeze.SpringBolt;
-import eu.icolumbo.breeze.connect.SpringRPCRequest;
-import eu.icolumbo.breeze.connect.SpringRPCResponse;
 import eu.icolumbo.breeze.SpringSpout;
 import eu.icolumbo.breeze.build.TopologyFactoryBean;
-
+import eu.icolumbo.breeze.connect.SpringRPCRequest;
+import eu.icolumbo.breeze.connect.SpringRPCResponse;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
-import org.springframework.beans.factory.support.BeanDefinitionValidationException;
 import org.springframework.beans.factory.support.ManagedList;
 import org.springframework.beans.factory.xml.AbstractBeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
@@ -70,7 +68,7 @@ public class TopologyBeanDefinitionParser extends AbstractBeanDefinitionParser {
 		ManagedList<BeanDefinition> boltDefinitions = new ManagedList<>();
 		for (Element bolt : getChildElementsByTagName(root, "bolt")) {
 			BeanDefinitionBuilder builder = rootBeanDefinition(SpringBolt.class);
-			builder.addPropertyValue("doAnchor", Boolean.valueOf(root.getAttribute("anchor")));
+			builder.addPropertyValue("doAnchor", Boolean.valueOf(bolt.getAttribute("anchor")));
 			boltDefinitions.add(define(builder, bolt, registry));
 		}
 
