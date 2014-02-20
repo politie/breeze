@@ -39,7 +39,7 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 	private final FunctionSignature inputSignature;
 	private final String[] outputFields;
 	private final Map<String,String> outputBindingDefinitions = new HashMap<>();
-	private final transient Map<String,Expression> outputBinding = new HashMap<>();
+	private final Map<String,Expression> outputBinding = new HashMap<>();
 
 	private String outputStreamId;
 	private boolean scatterOutput;
