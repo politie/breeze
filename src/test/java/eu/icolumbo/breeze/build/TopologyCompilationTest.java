@@ -116,7 +116,7 @@ public class TopologyCompilationTest {
 			subject.verify();
 			fail("no verify exception");
 		} catch (IllegalStateException e) {
-			String expected = "Can't resolve all input fields for: [SpringBolt 'b1']";
+			String expected = "Can't resolve all input fields for: [[bolt 'b1']]";
 			assertEquals(expected, e.getMessage());
 		}
 	}

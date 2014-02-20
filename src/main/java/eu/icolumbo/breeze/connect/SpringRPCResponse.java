@@ -25,10 +25,10 @@ public class SpringRPCResponse extends ReturnResults implements ConfiguredBolt {
 
 	private static final String[] outputFields = {};
 
-	private final String ID;
 	private final String[] inputFields;
 	private final String DESCRIPTION;
 
+	private String id;
 	private String[] passThroughFields = {};
 	private boolean doAnchor = true;
 	private Number parallelism;
@@ -41,8 +41,8 @@ public class SpringRPCResponse extends ReturnResults implements ConfiguredBolt {
 	}
 
 	private SpringRPCResponse(FunctionSignature signature, String... returnFields) {
-		ID = signature.getFunction() + "-rpc-rsp";
 		DESCRIPTION = format("%s '%s'", getClass().getSimpleName(), signature.getFunction());
+		setId(signature.getFunction() + "-rpc-rsp");
 
 		if (returnFields.length != 1) {
 			String msg = "Breeze RPC requires 1 output field for now";
@@ -87,7 +87,12 @@ public class SpringRPCResponse extends ReturnResults implements ConfiguredBolt {
 
 	@Override
 	public String getId() {
-		return ID;
+		return id;
+	}
+
+	@Override
+	public void setId(String value) {
+		id = value;
 	}
 
 	@Override

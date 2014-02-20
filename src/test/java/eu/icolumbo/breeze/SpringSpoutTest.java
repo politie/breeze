@@ -17,7 +17,6 @@ import java.nio.channels.AcceptPendingException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -155,8 +154,8 @@ public class SpringSpoutTest {
 
 		SpringSpout subject = new SpringSpout(bean.getClass(), "readLine()", "line");
 		subject.setApplicationContext(applicationContextMock);
-		subject.addDelayException(AcceptPendingException.class, acceptDelay);
-		subject.addDelayException(IOException.class, ioDelay);
+		subject.putDelayException(AcceptPendingException.class, acceptDelay);
+		subject.putDelayException(IOException.class, ioDelay);
 		subject.open(stormConf, contextMock, collectorMock);
 
 		long start = System.currentTimeMillis();

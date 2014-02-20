@@ -200,7 +200,7 @@ public class SpringBoltTest {
 	@Test
 	public void configurationError() {
 		SpringBolt subject = new SpringBolt(TestBean.class, "ping()", "out");
-		subject.addOutputBinding("out", "unknown(99)");
+		subject.putOutputBinding("out", "unknown(99)");
 		try {
 			run(subject);
 			fail("no exception");

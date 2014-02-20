@@ -37,6 +37,7 @@ public class SpringBolt extends SpringComponent implements ConfiguredBolt {
 
 	@Override
 	public void prepare(Map stormConf, TopologyContext topologyContext, OutputCollector outputCollector) {
+		logger.trace("{} Storm init", this);
 		collector = outputCollector;
 		super.init(stormConf, topologyContext);
 	}
@@ -50,13 +51,15 @@ public class SpringBolt extends SpringComponent implements ConfiguredBolt {
 		List<String> names = new ArrayList<>();
 		for (String f : getOutputFields()) names.add(f);
 		for (String f : passThroughFields) names.add(f);
-		declarer.declareStream(getOutputStreamId(), new Fields(names));
+		String streamId = getOutputStreamId();
+		logger.info("{} declares {} for stream '{}'",
+				new Object[] {this, names, streamId});
+		declarer.declareStream(streamId, new Fields(names));
 	}
 
 	@Override
 	public void execute(Tuple input) {
-		logger.debug("{} got tuple '{}'", this, input.getMessageId());
-
+		logger.trace("{} execute", this);
 		try {
 			String[] inputFields = getInputFields();
 			Object[] arguments = new Object[inputFields.length];
@@ -64,31 +67,27 @@ public class SpringBolt extends SpringComponent implements ConfiguredBolt {
 				arguments[i] = input.getValueByField(inputFields[i]));
 
 			Object[] returnEntries = invoke(arguments);
-			Values[] entries = new Values[returnEntries.length];
-			for(int i=0; i < returnEntries.length; i++){
-				entries[i] = getMapping(returnEntries[i], getOutputFields());
-			}
 
-			logger.trace("Got {} results", entries.length);
+			String[] outputFields = getOutputFields();
+			if (outputFields.length != 0 || passThroughFields.length != 0) {
+				Values[] entries = new Values[returnEntries.length];
+				for (int i = returnEntries.length; --i >= 0;
+					 entries[i] = getMapping(returnEntries[i], outputFields));
 
-			if (entries.length == 0 && passThroughFields.length != 0 && ! getScatterOutput()) {
-				logger.trace("Pass through only");
-				entries = new Values[] {new Values()};
-			}
+				String streamId = getOutputStreamId();
+				logger.debug("{} provides {} tuples to stream {}",
+						new Object[] {this, entries.length, streamId});
 
-			String streamId = getOutputStreamId();
-			logger.debug("{} provides {} tuples to stream {}",
-					new Object[] {this, entries.length, streamId});
+				for (Values output : entries) {
+					for (String name : passThroughFields)
+						output.add(input.getValueByField(name));
 
-			for (Values output : entries) {
-				for (String name : passThroughFields)
-					output.add(input.getValueByField(name));
-
-				logger.trace("Tuple emit");
-				if (doAnchor)
-					collector.emit(streamId, input, output);
-				else
-					collector.emit(streamId, output);
+					logger.trace("Tuple emit");
+					if (doAnchor)
+						collector.emit(streamId, input, output);
+					else
+						collector.emit(streamId, output);
+				}
 			}
 
 			collector.ack(input);
@@ -124,6 +123,13 @@ public class SpringBolt extends SpringComponent implements ConfiguredBolt {
 				if (name.equals(out))
 					throw new IllegalArgumentException(name + "' already defined as output field");
 		passThroughFields = value;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder buffer = new StringBuilder("[bolt '");
+		buffer.append(getId()).append("']");
+		return buffer.toString();
 	}
 
 }

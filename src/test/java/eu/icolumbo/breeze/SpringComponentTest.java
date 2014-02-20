@@ -164,7 +164,7 @@ public class SpringComponentTest {
 		data.setMessage("Hello");
 
 		SpringComponent subject = new SpringComponent(TestBean.class, "greet(n)", "message", "number") {};
-		subject.addOutputBinding("number", "id.toString()");
+		subject.putOutputBinding("number", "id.toString()");
 
 		assertEquals(expected, subject.getMapping(data, subject.getOutputFields()));
 	}
@@ -174,7 +174,7 @@ public class SpringComponentTest {
 		Values expected = new Values(null, 8, null);
 
 		SpringComponent subject = new SpringComponent(TestBean.class, "greet(n)", "unknown", "pass", "setterOnly") {};
-		subject.addOutputBinding("pass", "8");
+		subject.putOutputBinding("pass", "8");
 
 		assertEquals(expected, subject.getMapping(new TestBean.Data(), subject.getOutputFields()));
 	}

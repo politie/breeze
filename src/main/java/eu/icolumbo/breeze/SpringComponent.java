@@ -18,10 +18,8 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 import static backtype.storm.utils.Utils.DEFAULT_STREAM_ID;
-import static java.lang.String.format;
 
 
 /**
@@ -44,7 +42,6 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 
 	private String outputStreamId;
 	private boolean scatterOutput;
-
 	private Number parallelism;
 
 	private transient String id;
@@ -60,8 +57,8 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 	 */
 	public SpringComponent(Class<?> beanType, String invocation, String... outputFields) {
 		this.beanType = beanType;
-		this.outputFields = outputFields;
 		this.inputSignature = FunctionSignature.valueOf(invocation);
+		this.outputFields = outputFields;
 	}
 
 	/**
@@ -69,11 +66,10 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 	 */
 	protected void init(Map stormConf, TopologyContext topologyContext) {
 		setId(topologyContext.getThisComponentId());
-		logger.debug("Prepare " + this);
 
 		try {
 			method = inputSignature.findMethod(beanType);
-			logger.info(format("%s uses %s", this, method.toGenericString()));
+			logger.info("{} uses {}", this, method.toGenericString());
 		} catch (ReflectiveOperationException e) {
 			throw new IllegalStateException("Unusable input signature", e);
 		}
@@ -82,6 +78,7 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 			spring = SingletonApplicationContext.get(stormConf, topologyContext);
 
 		spring.getBean(beanType);
+		logger.debug("Bean lookup successful");
 	}
 
 	/**
@@ -89,7 +86,11 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 	 */
 	@Override
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		declarer.declareStream(getOutputStreamId(), new Fields(outputFields));
+		String streamId = getOutputStreamId();
+		Fields names = new Fields(outputFields);
+		logger.info("{} declares {} for stream '{}'",
+				new Object[] {this, names, streamId});
+		declarer.declareStream(streamId, names);
 	}
 
 	@Override
@@ -97,45 +98,44 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 		return null;
 	}
 
-	@Override
-	public String toString() {
-		StringBuilder description = new StringBuilder();
-		description.append(getClass().getSimpleName());
-		description.append(" '").append(getId()).append('\'');
-		return description.toString();
-	}
-
 	/**
-	 * Gets the bean invocation mapping.
+	 * Gets the bean invocation return entries.
 	 */
 	protected Object[] invoke(Object[] arguments)
 	throws InvocationTargetException, IllegalAccessException {
-		return invoke(method, arguments);
+		Object returnValue = invoke(method, arguments);
+
+		if (! scatterOutput) {
+			logger.trace("Using return as is");
+			return new Object[] {returnValue};
+		}
+
+		if (returnValue instanceof Object[]) {
+			logger.trace("Scatter array return");
+			return (Object[]) returnValue;
+		}
+
+		if (returnValue instanceof Collection) {
+			logger.trace("Scatter collection return");
+			return ((Collection) returnValue).toArray();
+		}
+
+		logger.debug("Discarding scatter return: {}", returnValue);
+		return EMPTY_ARRAY;
 	}
 
 	/**
-	 * Gets the bean invocation mapping.
+	 * Gets the bean invocation return value.
 	 */
-	protected Object[] invoke(Method method, Object[] arguments)
+	protected Object invoke(Method method, Object[] arguments)
 	throws InvocationTargetException, IllegalAccessException {
+		logger.trace("Lookup for call {}", method);
 		Object bean = spring.getBean(beanType);
 
-		Object[] returnEntries;
 		try {
-			logger.trace("Invoking {} on {}", method, bean);
-			Object returnValue = method.invoke(bean, arguments);
-
-			if (outputFields.length == 0) return EMPTY_ARRAY;
-
-			if (scatterOutput) {
-				returnEntries = scatter(returnValue);
-				logger.trace("Scattered {} into {} parts", returnValue, returnEntries.length);
-			} else {
-				returnEntries = new Object[] {returnValue};
-				logger.trace("Using return {}", returnValue);
-			}
+			return method.invoke(bean, arguments);
 		} catch (IllegalArgumentException e) {
-			StringBuilder msg = new StringBuilder(toString());
+			StringBuilder msg = new StringBuilder(method.toGenericString());
 			msg.append(" invoked with incompatible arguments:");
 			for (Object a : arguments) {
 				msg.append(' ');
@@ -147,8 +147,6 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 			logger.error(msg.toString());
 			throw e;
 		}
-
-		return returnEntries;
 	}
 
 	protected Values getMapping(Object returnEntry, String[] fields) {
@@ -176,27 +174,20 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 		return output;
 	}
 
-	private static Object[] scatter(Object o) {
-		if (o == null) return EMPTY_ARRAY;
-		if (o instanceof Object[])
-			return (Object[]) o;
-		if (o instanceof Collection)
-			return ((Collection) o).toArray();
-		return new Object[] {o};
-	}
-
 	@Override
 	public String getOutputStreamId() {
-		if (outputStreamId == null)
-			setOutputStreamId(DEFAULT_STREAM_ID);
-		return outputStreamId;
+		String value = outputStreamId;
+		if (value == null) {
+			value = DEFAULT_STREAM_ID;
+			setOutputStreamId(value);
+		}
+		return value;
 	}
 
 	/**
 	 * Sets the Storm identifier.
 	 */
 	public void setOutputStreamId(String value) {
-		logger.debug("{} output stream set to '{}'", this, value);
 		outputStreamId = value;
 	}
 
@@ -214,12 +205,12 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 
 	/**
 	 * Sets expressions per field.
-	 * @see #addOutputBinding(String, String)
+	 * @see #putOutputBinding(String, String)
 	 */
 	public void setOutputBinding(Map<String,String> value) {
 		outputBinding.clear();
 		for (Map.Entry<String,String> entry : value.entrySet())
-			addOutputBinding(entry.getKey(), entry.getValue());
+			putOutputBinding(entry.getKey(), entry.getValue());
 	}
 
 	/**
@@ -227,7 +218,7 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 	 * @param field the name.
 	 * @param expression the SpEL definition.
 	 */
-	public void addOutputBinding(String field, String expression) {
+	public void putOutputBinding(String field, String expression) {
 		logger.debug("Field {} bound as #{{}}", field, expression);
 		Expression spel = expressionParser.parseExpression(expression);
 		outputBinding.put(field, spel);
@@ -236,7 +227,7 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 	private Expression getOutputBinding(String field) {
 		Expression binding = outputBinding.get(field);
 		if (binding == null) {
-			addOutputBinding(field, getDefaultExpression(field));
+			putOutputBinding(field, getDefaultExpression(field));
 			binding = outputBinding.get(field);
 		}
 		return binding;
@@ -278,16 +269,10 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 
 	@Override
 	public String getId() {
-		if (id == null) {
-			setId(UUID.randomUUID().toString());
-			logger.warn("Generated ID for {}: {}", this, beanType);
-		}
 		return id;
 	}
 
-	/**
-	 * Sets the Storm & Spring identifier.
-	 */
+	@Override
 	public void setId(String value) {
 		id = value;
 	}

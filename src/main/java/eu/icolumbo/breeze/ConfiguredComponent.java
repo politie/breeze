@@ -14,6 +14,11 @@ public interface ConfiguredComponent extends IComponent {
 	String getId();
 
 	/**
+	 * Sets the Storm & Spring identifier.
+	 */
+	void setId(String value);
+
+	/**
 	 * Gets the Storm identifier.
 	 */
 	String getOutputStreamId();

@@ -16,10 +16,10 @@ import static java.lang.String.format;
  */
 public class SpringRPCRequest extends DRPCSpout implements ConfiguredSpout {
 
-	private final String ID;
 	private final String[] outputFields;
 	private final String DESCRIPTION;
 
+	private String id;
 	private Number parallelism;
 
 
@@ -29,8 +29,8 @@ public class SpringRPCRequest extends DRPCSpout implements ConfiguredSpout {
 
 	private SpringRPCRequest(FunctionSignature signature) {
 		super(signature.getFunction());
-		ID = signature.getFunction() + "-rpc-req";
 		DESCRIPTION = format("%s '%s'", getClass().getSimpleName(), signature.getFunction());
+		setId(signature.getFunction() + "-rpc-req");
 
 		String outputField = "_ignoreArguments";
 		if (signature.getArguments().length == 1) {
@@ -58,7 +58,12 @@ public class SpringRPCRequest extends DRPCSpout implements ConfiguredSpout {
 
 	@Override
 	public String getId() {
-		return ID;
+		return id;
+	}
+
+	@Override
+	public void setId(String value) {
+		id = value;
 	}
 
 	@Override

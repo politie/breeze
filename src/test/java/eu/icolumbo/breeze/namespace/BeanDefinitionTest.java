@@ -117,7 +117,7 @@ public class BeanDefinitionTest extends AbstractXmlApplicationContext {
 		} catch (BeanCreationException e) {
 			Throwable cause = e.getCause();
 			assertNotNull("cause", cause);
-			String expected = "Can't resolve all input fields for: [SpringBolt 'b1']";
+			String expected = "Can't resolve all input fields for: [[bolt 'b1']]";
 			assertEquals(expected, cause.getMessage());
 		}
 	}

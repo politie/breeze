@@ -36,12 +36,29 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 
 	@Override
 	public void open(Map stormConf, TopologyContext topologyContext, SpoutOutputCollector outputCollector) {
+		logger.trace("{} Storm init", this);
 		collector = outputCollector;
-		this.init(stormConf, topologyContext);
+		super.init(stormConf, topologyContext);
+
+		try {
+			if (ackSignature != null) {
+				ackMethod = ackSignature.findMethod(beanType);
+				logger.info("{} uses {} for transaction acknowledgement",
+						this, ackMethod.toGenericString());
+			}
+			if (failSignature != null) {
+				failMethod = failSignature.findMethod(beanType);
+				logger.info("{} uses {} for transaction failures",
+						this, failMethod.toGenericString());
+			}
+		} catch (ReflectiveOperationException e) {
+			throw new IllegalStateException("Unusable transaction signature", e);
+		}
 	}
 
 	@Override
 	public void nextTuple() {
+		logger.trace("{} next", this);
 		try {
 			Object[] results = invoke(EMPTY_ARRAY);
 			String streamId = getOutputStreamId();
@@ -52,10 +69,12 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 				Values entries = getMapping(results[i], getOutputFields());
 
 				if (failSignature == null && ackSignature == null) {
+					logger.trace("Tuple emit");
 					collector.emit(streamId, entries);
 					continue;
 				}
 
+				logger.trace("Transactional tuple emit");
 				TransactionMessageId messageId = new TransactionMessageId();
 				if (failSignature != null)
 					messageId.setFailParams(mapOutputFields(results[i], failSignature.getArguments()));
@@ -70,7 +89,7 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 			for (Map.Entry<Class<? extends Exception>,Long> option : delayExceptions.entrySet()) {
 				if (option.getKey().isAssignableFrom(causeType)) {
 					Long delay = option.getValue();
-					logger.info("{} triggers an {}ms delay", causeType.getSimpleName(), delay);
+					logger.info("{} triggers a {}ms delay", causeType.getSimpleName(), delay);
 					Utils.sleep(delay);
 					return;
 				}
@@ -96,7 +115,10 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 
 	@Override
 	public void ack(Object o) {
-		if (! (o instanceof TransactionMessageId)) return;
+		if (! (o instanceof TransactionMessageId)) {
+			logger.warn("Ack with unknown message ID: {}", o);
+			return;
+		}
 		TransactionMessageId messageId = (TransactionMessageId) o;
 		Object[] values = messageId.getAckParams();
 		logger.trace("Ack with: {}", values);
@@ -109,7 +131,10 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 
 	@Override
 	public void fail(Object o) {
-		if (! (o instanceof TransactionMessageId)) return;
+		if (! (o instanceof TransactionMessageId)) {
+			logger.warn("Fail with unknown message ID: {}", o);
+			return;
+		}
 		TransactionMessageId messageId = (TransactionMessageId) o;
 		Object[] values = messageId.getFailParams();
 		logger.trace("Fail with: {}", values);
@@ -120,49 +145,46 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 		}
 	}
 
-	@Override
-	protected void init(Map stormConf, TopologyContext topologyContext) {
-		super.init(stormConf, topologyContext);
-
-		try {
-			if (ackSignature != null) {
-				ackMethod = ackSignature.findMethod(beanType);
-				logger.info("{} uses {} for transaction acknowledgement", this, ackMethod.toGenericString());
-			}
-			if (failSignature != null) {
-				failMethod = failSignature.findMethod(beanType);
-				logger.info("{} uses {} for transaction failures", this, failMethod.toGenericString());
-			}
-		} catch (ReflectiveOperationException e) {
-			throw new IllegalStateException("Unusable transaction signature", e);
-		}
+	/**
+	 * Sets the method for transaction acknowledgement.
+	 */
+	public void setAckSignature(String value) {
+		ackSignature = FunctionSignature.valueOf(value);
 	}
 
-	public void setAckSignature(String ack) {
-		this.ackSignature = FunctionSignature.valueOf(ack);
-	}
-
-	public void setFailSignature(String fail) {
-		this.failSignature = FunctionSignature.valueOf(fail);
+	/**
+	 * Sets the method for transaction failures.
+	 */
+	public void setFailSignature(String value) {
+		failSignature = FunctionSignature.valueOf(value);
 	}
 
 	/**
 	 * Sets the delays per exception.
-	 * @see #addDelayException(Class, long)
+	 * @see #putDelayException(Class, long)
 	 */
 	public void setDelayExceptions(Map<Class<? extends Exception>,Long> value) {
 		delayExceptions.clear();
 		for (Map.Entry<Class<? extends Exception>,Long> entry : value.entrySet())
-			addDelayException(entry.getKey(), entry.getValue());
+			putDelayException(entry.getKey(), entry.getValue());
 	}
 
 	/**
-	 * Specifies an exception to extend the abort.
-	 * @param type the exception match.
+	 * Registers a delay for an exception.
+	 * When the invocation on the bean fails with a matching exception then
+	 * {@link #nextTuple()} gets extended with {@link Utils#sleep(long)}.
+	 * @param type the criteria.
 	 * @param delay the number of milliseconds.
 	 */
-	public void addDelayException(Class<? extends Exception> type, long delay) {
+	public void putDelayException(Class<? extends Exception> type, long delay) {
 		delayExceptions.put(type, delay);
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder buffer = new StringBuilder("[spout '");
+		buffer.append(getId()).append("']");
+		return buffer.toString();
 	}
 
 }

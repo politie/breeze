@@ -1,6 +1,7 @@
 package eu.icolumbo.breeze.build;
 
 import eu.icolumbo.breeze.ConfiguredBolt;
+import eu.icolumbo.breeze.ConfiguredComponent;
 import eu.icolumbo.breeze.ConfiguredSpout;
 
 import org.slf4j.Logger;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.UUID;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.addAll;
@@ -47,12 +49,25 @@ public class TopologyCompilation extends TreeMap<ConfiguredSpout,List<Configured
 	}
 
 	public void add(ConfiguredSpout... values) {
-		for (ConfiguredSpout x : values)
+		for (ConfiguredSpout x : values) {
+			ensureId(x);
 			put(x, new ArrayList<ConfiguredBolt>());
+		}
 	}
 
 	public void add(ConfiguredBolt... values) {
-		addAll(unbound, values);
+		for (ConfiguredBolt x : values) {
+			ensureId(x);
+			unbound.add(x);
+		}
+	}
+
+	private static void ensureId(ConfiguredComponent c) {
+		String id = c.getId();
+		if (id != null) return;
+		id = UUID.randomUUID().toString();
+		logger.warn("Generated missing ID: {}", id);
+		c.setId(id);
 	}
 
 	@Override
