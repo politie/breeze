@@ -38,7 +38,8 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 
 	private final FunctionSignature inputSignature;
 	private final String[] outputFields;
-	private final Map<String,Expression> outputBinding = new HashMap<>();
+	private final Map<String,String> outputBindingDefinitions = new HashMap<>();
+	private final transient Map<String,Expression> outputBinding = new HashMap<>();
 
 	private String outputStreamId;
 	private boolean scatterOutput;
@@ -209,6 +210,7 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 	 */
 	public void setOutputBinding(Map<String,String> value) {
 		outputBinding.clear();
+		outputBindingDefinitions.clear();
 		for (Map.Entry<String,String> entry : value.entrySet())
 			putOutputBinding(entry.getKey(), entry.getValue());
 	}
@@ -219,16 +221,18 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 	 * @param expression the SpEL definition.
 	 */
 	public void putOutputBinding(String field, String expression) {
-		logger.debug("Field {} bound as #{{}}", field, expression);
-		Expression spel = expressionParser.parseExpression(expression);
-		outputBinding.put(field, spel);
+		outputBindingDefinitions.put(field, expression);
 	}
 
 	private Expression getOutputBinding(String field) {
 		Expression binding = outputBinding.get(field);
 		if (binding == null) {
-			putOutputBinding(field, getDefaultExpression(field));
-			binding = outputBinding.get(field);
+			String definition = outputBindingDefinitions.get(field);
+			if (definition == null)
+				definition = getDefaultExpression(field);
+			logger.debug("Field {} bound as #{{}}", field, definition);
+			binding = expressionParser.parseExpression(definition);
+			outputBinding.put(field, binding);
 		}
 		return binding;
 	}

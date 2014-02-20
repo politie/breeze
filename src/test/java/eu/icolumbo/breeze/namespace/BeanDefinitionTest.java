@@ -13,8 +13,6 @@ import backtype.storm.generated.StormTopology;
 import org.junit.Test;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.BeanDefinitionStoreException;
-import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.beans.factory.support.BeanDefinitionValidationException;
 import org.springframework.context.support.AbstractXmlApplicationContext;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -133,10 +131,10 @@ public class BeanDefinitionTest extends AbstractXmlApplicationContext {
 		refresh();
 
 		SpringSpout spout = getBean(SpringSpout.class);
-		Map<String,Expression> outputBinding = read(spout, SpringComponent.class.getDeclaredField("outputBinding"));
-		assertEquals("#root.length()", outputBinding.get("feed").getExpressionString());
+		Map<String,Expression> outputBinding = read(spout, SpringComponent.class, "outputBindingDefinitions");
+		assertEquals("#root.length()", outputBinding.get("feed"));
 
-		Map<Class<?>,Long> delayExceptions = read(spout, spout.getClass().getDeclaredField("delayExceptions"));
+		Map<Class<?>,Long> delayExceptions = read(spout, spout.getClass(), "delayExceptions");
 		assertEquals(new Long(2000), delayExceptions.get(IOException.class));
 	}
 
@@ -151,7 +149,7 @@ public class BeanDefinitionTest extends AbstractXmlApplicationContext {
 
 		SpringSpout spout = getBean(SpringSpout.class);
 
-		FunctionSignature ackSignature = read(spout, spout.getClass().getDeclaredField("ackSignature"));
+		FunctionSignature ackSignature = read(spout, spout.getClass(), "ackSignature");
 		assertEquals("ok", ackSignature.getFunction());
 	}
 
@@ -166,11 +164,12 @@ public class BeanDefinitionTest extends AbstractXmlApplicationContext {
 
 		SpringSpout spout = getBean(SpringSpout.class);
 
-		FunctionSignature failSignature = read(spout, spout.getClass().getDeclaredField("failSignature"));
+		FunctionSignature failSignature = read(spout, spout.getClass(), "failSignature");
 		assertEquals("retry", failSignature.getFunction());
 	}
 
-	private static <T> T read(Object source, Field f) throws Exception {
+	private static <T> T read(Object source, Class c, String field) throws Exception {
+		Field f = c.getDeclaredField(field);
 		f.setAccessible(true);
 		return (T) f.get(source);
 	}
