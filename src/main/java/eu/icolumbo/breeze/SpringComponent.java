@@ -29,7 +29,7 @@ import static backtype.storm.utils.Utils.DEFAULT_STREAM_ID;
  */
 public abstract class SpringComponent implements ConfiguredComponent, ApplicationContextAware {
 
-	private static final Logger logger = LoggerFactory.getLogger(SpringSpout.class);
+	private static final Logger logger = LoggerFactory.getLogger(SpringComponent.class);
 	private static final SpelExpressionParser expressionParser = new SpelExpressionParser();
 	private static final long serialVersionUID = 3;
 	static final Values[] EMPTY_ARRAY = {};
