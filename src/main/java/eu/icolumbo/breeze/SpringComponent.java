@@ -121,8 +121,8 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 			return ((Collection) returnValue).toArray();
 		}
 
-		logger.debug("Discarding scatter return: {}", returnValue);
-		return EMPTY_ARRAY;
+		logger.debug("Scatter singleton return");
+		return returnValue == null ? EMPTY_ARRAY : new Object[] {returnValue};
 	}
 
 	/**

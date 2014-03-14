@@ -15,6 +15,7 @@ import org.springframework.context.ApplicationContext;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import static java.util.Arrays.asList;
@@ -143,16 +144,19 @@ public class SpringComponentTest {
 	}
 
 	@Test
-	public void nullScatter() throws Exception {
-		Collection<?> beanMock = mock(Collection.class);
+	public void filter() throws Exception {
+		Iterator<?> beanMock = mock(Iterator.class);
 		doReturn(beanMock).when(applicationContextMock).getBean(beanMock.getClass());
 
-		SpringComponent subject = new SpringComponent(beanMock.getClass(), "toArray()", "x") {};
+		SpringComponent subject = new SpringComponent(beanMock.getClass(), "next()", "x") {};
 		subject.setApplicationContext(applicationContextMock);
 		subject.setScatterOutput(true);
 		subject.init(stormConf, topologyContextMock);
 
 		assertEquals("return count", 0, subject.invoke(new Object[0]).length);
+
+		doReturn(new Object()).when(beanMock).next();
+		assertEquals("return count", 1, subject.invoke(new Object[0]).length);
 	}
 
 	@Test
