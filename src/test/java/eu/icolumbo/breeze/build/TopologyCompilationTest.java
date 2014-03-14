@@ -83,6 +83,20 @@ public class TopologyCompilationTest {
 	}
 
 	@Test
+	public void aggregate() {
+		subject.add(spout("s1", "f()", "a"));
+		subject.add(spout("s2", "f()", "b"));
+		subject.add(spout("s3", "f()", "c"));
+		subject.add(bolt("b1", "f(b)", "a"));
+		subject.add(bolt("b2", "f(c)", "d"));
+		subject.add(bolt("b3", "f(d)", "a"));
+		subject.add(bolt("b4", "f(a)", "final"));
+		assertPipeline("s1", "b4");
+		assertPipeline("s2", "b1", "b4");
+		assertPipeline("s3", "b2", "b3", "b4");
+	}
+
+	@Test
 	public void order() {
 		subject.add(spout("s1", "f()", "feed"));
 		subject.add(bolt("b1", "f(feed, a, b)"));
