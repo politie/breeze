@@ -6,6 +6,7 @@ import eu.icolumbo.breeze.SpringComponent;
 import eu.icolumbo.breeze.SpringSpout;
 
 import backtype.storm.generated.Bolt;
+import backtype.storm.generated.ComponentCommon;
 import backtype.storm.generated.GlobalStreamId;
 import backtype.storm.generated.Grouping;
 import backtype.storm.generated.SpoutSpec;
@@ -85,6 +86,25 @@ public class BeanDefinitionTest extends AbstractXmlApplicationContext {
 		GlobalStreamId streamId = boltInputs.keySet().iterator().next();
 		assertEquals("input component id", "s1", streamId.get_componentId());
 		assertEquals("input stream id", "default", streamId.get_streamId());
+	}
+
+
+	@Test
+	public void aggregate() throws Exception {
+		beansXml = "<breeze:topology id='aggregate'>" +
+				"<breeze:spout id='iterator' beanType='java.util.Iterator' signature='next()' outputFields='x'/>" +
+				"<breeze:spout id='queue' beanType='java.util.Queue' signature='poll()' outputFields='x'/>" +
+				"<breeze:bolt id='collector' beanType='org.slf4j.Logger' signature='info(x)'/>" +
+				"</breeze:topology>";
+		refresh();
+
+		StormTopology topology = getBean("aggregate", StormTopology.class);
+
+		Bolt collector = topology.get_bolts().get("collector");
+		Map<GlobalStreamId, Grouping> inputs = collector.get_common().get_inputs();
+		assertEquals("input count", 2, inputs.size());
+		assertNotNull("iterator grouping", inputs.get(new GlobalStreamId("iterator", "default")));
+		assertNotNull("queue grouping", inputs.get(new GlobalStreamId("queue", "default")));
 	}
 
 	@Test

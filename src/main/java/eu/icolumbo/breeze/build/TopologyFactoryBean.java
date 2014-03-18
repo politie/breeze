@@ -8,6 +8,7 @@ import backtype.storm.topology.BoltDeclarer;
 import backtype.storm.topology.TopologyBuilder;
 import org.springframework.beans.factory.FactoryBean;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -51,6 +52,8 @@ public class TopologyFactoryBean extends TopologyCompilation implements FactoryB
 		run();
 		verify();
 
+		Map<String,BoltDeclarer> declaredBolts = new HashMap<>();
+
 		TopologyBuilder builder = new TopologyBuilder();
 		for (Map.Entry<ConfiguredSpout,List<ConfiguredBolt>> line : entrySet()) {
 			ConfiguredSpout spout = line.getKey();
@@ -59,8 +62,11 @@ public class TopologyFactoryBean extends TopologyCompilation implements FactoryB
 			builder.setSpout(lastId, spout, spout.getParallelism());
 			for (ConfiguredBolt bolt : line.getValue()) {
 				String id = bolt.getId();
-				BoltDeclarer declarer = builder.setBolt(id, bolt, bolt.getParallelism());
+				BoltDeclarer declarer = declaredBolts.get(id);
+				if (declarer == null)
+					declarer = builder.setBolt(id, bolt, bolt.getParallelism());
 				declarer.noneGrouping(lastId, streamId);
+				if (declaredBolts.put(id, declarer) != null) break;
 				lastId = id;
 				streamId = bolt.getOutputStreamId();
 			}
