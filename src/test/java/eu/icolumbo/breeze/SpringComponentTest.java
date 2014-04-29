@@ -170,7 +170,7 @@ public class SpringComponentTest {
 		SpringComponent subject = new SpringComponent(TestBean.class, "greet(n)", "message", "number") {};
 		subject.putOutputBinding("number", "id.toString()");
 
-		assertEquals(expected, subject.getMapping(data, subject.getOutputFields()));
+		assertEquals(expected, subject.getMapping(data));
 	}
 
 	@Test
@@ -180,7 +180,7 @@ public class SpringComponentTest {
 		SpringComponent subject = new SpringComponent(TestBean.class, "greet(n)", "unknown", "pass", "setterOnly") {};
 		subject.putOutputBinding("pass", "8");
 
-		assertEquals(expected, subject.getMapping(new TestBean.Data(), subject.getOutputFields()));
+		assertEquals(expected, subject.getMapping(new TestBean.Data()));
 	}
 
 	@Test

@@ -66,7 +66,7 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 					new Object[] {this, results.length, streamId});
 
 			for (int i = results.length; --i >= 0; ) {
-				Values entries = getMapping(results[i], getOutputFields());
+				Values entries = getMapping(results[i]);
 
 				if (failSignature == null && ackSignature == null) {
 					logger.trace("Tuple emit");

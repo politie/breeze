@@ -150,8 +150,8 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 		}
 	}
 
-	protected Values getMapping(Object returnEntry, String[] fields) {
-		return new Values(mapOutputFields(returnEntry, fields));
+	protected Values getMapping(Object returnEntry) {
+		return new Values(mapOutputFields(returnEntry, outputFields));
 	}
 
 	protected Object[] mapOutputFields(Object returnEntry, String[] fields) {
