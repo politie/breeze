@@ -60,28 +60,28 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 	public void nextTuple() {
 		logger.trace("{} next", this);
 		try {
-			Object[] results = invoke(EMPTY_ARRAY);
+			Object[] returnEntries = invoke(EMPTY_ARRAY);
 			String streamId = getOutputStreamId();
 			logger.debug("{} provides {} tuples to stream {}",
-					new Object[] {this, results.length, streamId});
+					new Object[] {this, returnEntries.length, streamId});
 
-			for (int i = results.length; --i >= 0; ) {
-				Values entries = getMapping(results[i]);
+			for (Object returnEntry : returnEntries) {
+				Values output = getMapping(returnEntry);
 
 				if (failSignature == null && ackSignature == null) {
 					logger.trace("Tuple emit");
-					collector.emit(streamId, entries);
+					collector.emit(streamId, output);
 					continue;
 				}
 
 				logger.trace("Transactional tuple emit");
 				TransactionMessageId messageId = new TransactionMessageId();
 				if (failSignature != null)
-					messageId.setFailParams(mapOutputFields(results[i], failSignature.getArguments()));
+					messageId.setFailParams(mapOutputFields(returnEntry, failSignature.getArguments()));
 				if (ackSignature != null)
-					messageId.setAckParams(mapOutputFields(results[i], ackSignature.getArguments()));
+					messageId.setAckParams(mapOutputFields(returnEntry, ackSignature.getArguments()));
 
-				collector.emit(streamId, entries, messageId);
+				collector.emit(streamId, output, messageId);
 			}
 		} catch (InvocationTargetException e) {
 			Throwable cause = e.getCause();
