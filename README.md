@@ -25,17 +25,6 @@ Maven
 </dependency>
 ```
 
-Add the Clojars repository for Storm.
-
-```xml
-<repositories>
-	<repository>
-		<id>clojars</id>
-		<url>http://clojars.org/repo</url>
-	</repository>
-</repositories>
-```
-
 The default topology starter can be used for local testing.
 
 ```xml
