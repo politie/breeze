@@ -25,8 +25,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.isA;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -178,7 +178,17 @@ public class SpringBoltTest {
 		run(subject);
 		verify(outputCollectorMock, never()).ack(tupleMock);
 		verify(outputCollectorMock).fail(tupleMock);
-		verify(outputCollectorMock).reportError(any(CloneNotSupportedException.class));
+		verify(outputCollectorMock).reportError(isA(CloneNotSupportedException.class));
+	}
+
+	@Test
+	public void bindingException() {
+		SpringBolt subject = new SpringBolt(TestBean.class, "toString()", "c");
+		subject.putOutputBinding("c", "broken(666)");
+		run(subject);
+		verify(outputCollectorMock, never()).ack(tupleMock);
+		verify(outputCollectorMock).fail(tupleMock);
+		verify(outputCollectorMock).reportError(isA(SpelEvaluationException.class));
 	}
 
 	@Test
@@ -192,19 +202,6 @@ public class SpringBoltTest {
 			fail("no exception");
 		} catch (RuntimeException e) {
 			assertSame(cause, e);
-		}
-
-		verifyZeroInteractions(outputCollectorMock);
-	}
-
-	@Test
-	public void configurationError() {
-		SpringBolt subject = new SpringBolt(TestBean.class, "ping()", "out");
-		subject.putOutputBinding("out", "unknown(99)");
-		try {
-			run(subject);
-			fail("no exception");
-		} catch (SpelEvaluationException ignored) {
 		}
 
 		verifyZeroInteractions(outputCollectorMock);

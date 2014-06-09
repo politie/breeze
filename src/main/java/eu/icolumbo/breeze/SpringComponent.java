@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static backtype.storm.utils.Utils.DEFAULT_STREAM_ID;
+import static org.springframework.expression.spel.SpelMessage.PROPERTY_OR_FIELD_NOT_READABLE;
 
 
 /**
@@ -159,16 +160,14 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 
 		int i = fields.length;
 		Object[] output = new Object[i];
-		while (--i >= 0) try {
-			Expression spel = getOutputBinding(fields[i]);
-			output[i] = spel.getValue(context);
-		} catch (SpelEvaluationException e) {
-			switch (e.getMessageCode()) {
-				case PROPERTY_OR_FIELD_NOT_READABLE:
-					logger.info(e.getMessage());
-					break;
-				default:
+		while (--i >= 0) {
+			try {
+				Expression spel = getOutputBinding(fields[i]);
+				output[i] = spel.getValue(context);
+			} catch (SpelEvaluationException e) {
+				if (e.getMessageCode() != PROPERTY_OR_FIELD_NOT_READABLE)
 					throw e;
+				logger.info(e.getMessage());
 			}
 		}
 
@@ -228,19 +227,17 @@ public abstract class SpringComponent implements ConfiguredComponent, Applicatio
 		Expression binding = outputBinding.get(field);
 		if (binding == null) {
 			String definition = outputBindingDefinitions.get(field);
-			if (definition == null)
-				definition = getDefaultExpression(field);
+			if (definition == null) {
+				if (outputFields.length == 1 && outputFields[0].equals(field))
+					definition = "#root";
+				else
+					definition = "#root?." + field;
+			}
 			logger.debug("Field {} bound as #{{}}", field, definition);
 			binding = expressionParser.parseExpression(definition);
 			outputBinding.put(field, binding);
 		}
 		return binding;
-	}
-
-	private String getDefaultExpression(String field) {
-		if (outputFields.length == 1 && outputFields[0].equals(field))
-			return "#root";
-		return "#root?." + field;
 	}
 
 	/**

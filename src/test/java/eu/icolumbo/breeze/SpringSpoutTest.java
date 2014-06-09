@@ -24,10 +24,9 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -133,13 +132,25 @@ public class SpringSpoutTest {
 	}
 
 	@Test
-	public void operaionException() throws Exception {
+	public void operationException() throws Exception {
 		SpringSpout subject = new SpringSpout(TestBean.class, "clone()", "copy");
 
 		subject.open(stormConf, contextMock, collectorMock);
 		subject.nextTuple();
 
-		verify(collectorMock).reportError(any(CloneNotSupportedException.class));
+		verify(collectorMock).reportError(isA(CloneNotSupportedException.class));
+		verifyNoMoreInteractions(collectorMock);
+	}
+
+	@Test
+	public void bindingException() throws Exception {
+		SpringSpout subject = new SpringSpout(TestBean.class, "toString()", "c");
+		subject.putOutputBinding("c", "charAt(666)");
+
+		subject.open(stormConf, contextMock, collectorMock);
+		subject.nextTuple();
+
+		verify(collectorMock).reportError(isA(StringIndexOutOfBoundsException.class));
 		verifyNoMoreInteractions(collectorMock);
 	}
 

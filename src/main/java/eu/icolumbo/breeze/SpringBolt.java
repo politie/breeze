@@ -74,7 +74,12 @@ public class SpringBolt extends SpringComponent implements ConfiguredBolt {
 						new Object[] {this, returnEntries.length, streamId});
 
 				for (Object returnEntry : returnEntries) {
-					Values output = getMapping(returnEntry);
+					Values output;
+					try {
+						output = getMapping(returnEntry);
+					} catch (Exception e) {
+						throw new InvocationTargetException(e);
+					}
 
 					for (String name : passThroughFields)
 						output.add(input.getValueByField(name));
