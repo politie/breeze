@@ -137,17 +137,17 @@ public class TopologyStarter extends Thread {
 				Field typeField = result.getClass().getDeclaredField(typeFieldName);
 				Object type = typeField.get(result);
 
-				logger.trace("Conforming key '{}' to type: {}", field, type);
+				logger.trace("Detected key '{}' as: {}", key, field);
 				Object value = null;
 				if (type == String.class)
 					value = entry;
-				if (type == Number.class || type == ConfigValidation.PowerOf2Validator)
+				if (type == ConfigValidation.IntegerValidator || type == ConfigValidation.PowerOf2Validator)
 					value = Integer.valueOf(entry);
 				if (type == Boolean.class)
 					value = Boolean.valueOf(entry);
 				if (type == ConfigValidation.StringsValidator)
 					value = asList(entry.split(LIST_CONTINUATION_PATTERN));
-				if (type == ConfigValidation.NumbersValidator) {
+				if (type == ConfigValidation.IntegersValidator) {
 					List<Number> numbers = new ArrayList<>();
 					value = numbers;
 					for (String serial : entry.split(LIST_CONTINUATION_PATTERN))
@@ -155,7 +155,7 @@ public class TopologyStarter extends Thread {
 				}
 
 				if (value == null) {
-					logger.warn("No parser for key '{}' type: {}", key, type);
+					logger.warn("No parser for key '{}' type: {}", key, typeField);
 					value = entry;
 				}
 				result.put(key, value);
