@@ -209,7 +209,7 @@ public class SpringSpoutTest {
 		SpringSpout subject = new SpringSpout(TestBean.class, "toString()", "s");
 		subject.setAckSignature("clone()");
 		subject.open(stormConf, contextMock, collectorMock);
-		subject.ack(new TransactionMessageId());
+		subject.ack(new TransactionContext());
 	}
 
 	@Test
@@ -217,7 +217,7 @@ public class SpringSpoutTest {
 		SpringSpout subject = new SpringSpout(TestBean.class, "toString()", "s");
 		subject.setFailSignature("clone()");
 		subject.open(stormConf, contextMock, collectorMock);
-		subject.fail(new TransactionMessageId());
+		subject.fail(new TransactionContext());
 	}
 
 }

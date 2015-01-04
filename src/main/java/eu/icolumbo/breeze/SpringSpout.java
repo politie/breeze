@@ -80,7 +80,7 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 				}
 
 				logger.trace("Transactional tuple emit");
-				TransactionMessageId messageId = new TransactionMessageId();
+				TransactionContext messageId = new TransactionContext();
 				if (failSignature != null)
 					messageId.setFailParams(mapOutputFields(returnEntry, failSignature.getArguments()));
 				if (ackSignature != null)
@@ -120,12 +120,12 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 
 	@Override
 	public void ack(Object o) {
-		if (! (o instanceof TransactionMessageId)) {
+		if (! (o instanceof TransactionContext)) {
 			logger.warn("Ack with unknown message ID: {}", o);
 			return;
 		}
-		TransactionMessageId messageId = (TransactionMessageId) o;
-		Object[] values = messageId.getAckParams();
+		TransactionContext context = (TransactionContext) o;
+		Object[] values = context.getAckParams();
 		logger.trace("Ack with: {}", values);
 		try {
 			invoke(ackMethod, values);
@@ -136,12 +136,12 @@ public class SpringSpout extends SpringComponent implements ConfiguredSpout {
 
 	@Override
 	public void fail(Object o) {
-		if (! (o instanceof TransactionMessageId)) {
+		if (! (o instanceof TransactionContext)) {
 			logger.warn("Fail with unknown message ID: {}", o);
 			return;
 		}
-		TransactionMessageId messageId = (TransactionMessageId) o;
-		Object[] values = messageId.getFailParams();
+		TransactionContext context = (TransactionContext) o;
+		Object[] values = context.getFailParams();
 		logger.trace("Fail with: {}", values);
 		try {
 			invoke(failMethod, values);
