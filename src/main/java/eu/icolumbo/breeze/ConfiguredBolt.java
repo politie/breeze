@@ -1,6 +1,6 @@
 package eu.icolumbo.breeze;
 
-import backtype.storm.topology.IRichBolt;
+import org.apache.storm.topology.IRichBolt;
 
 
 /**

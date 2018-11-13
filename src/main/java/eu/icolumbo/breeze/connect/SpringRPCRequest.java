@@ -3,11 +3,11 @@ package eu.icolumbo.breeze.connect;
 import eu.icolumbo.breeze.ConfiguredSpout;
 import eu.icolumbo.breeze.FunctionSignature;
 
-import backtype.storm.drpc.DRPCSpout;
-import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.tuple.Fields;
+import org.apache.storm.drpc.DRPCSpout;
+import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.tuple.Fields;
 
-import static backtype.storm.utils.Utils.DEFAULT_STREAM_ID;
+import static org.apache.storm.utils.Utils.DEFAULT_STREAM_ID;
 import static java.lang.String.format;
 
 

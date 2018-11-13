@@ -1,7 +1,7 @@
 package eu.icolumbo.breeze;
 
-import backtype.storm.Config;
-import backtype.storm.task.TopologyContext;
+import org.apache.storm.Config;
+import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;

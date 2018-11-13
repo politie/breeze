@@ -3,18 +3,18 @@ package eu.icolumbo.breeze.connect;
 import eu.icolumbo.breeze.ConfiguredBolt;
 import eu.icolumbo.breeze.FunctionSignature;
 
-import backtype.storm.drpc.ReturnResults;
-import backtype.storm.task.OutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.tuple.Fields;
-import backtype.storm.tuple.Tuple;
+import org.apache.storm.drpc.ReturnResults;
+import org.apache.storm.task.OutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.tuple.Fields;
+import org.apache.storm.tuple.Tuple;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static backtype.storm.utils.Utils.DEFAULT_STREAM_ID;
+import static org.apache.storm.utils.Utils.DEFAULT_STREAM_ID;
 import static java.lang.String.format;
 
 

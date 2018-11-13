@@ -1,6 +1,6 @@
 package eu.icolumbo.breeze;
 
-import backtype.storm.topology.IComponent;
+import org.apache.storm.topology.IComponent;
 
 
 /**

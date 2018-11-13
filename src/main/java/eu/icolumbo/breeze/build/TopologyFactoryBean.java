@@ -3,9 +3,9 @@ package eu.icolumbo.breeze.build;
 import eu.icolumbo.breeze.ConfiguredBolt;
 import eu.icolumbo.breeze.ConfiguredSpout;
 
-import backtype.storm.generated.StormTopology;
-import backtype.storm.topology.BoltDeclarer;
-import backtype.storm.topology.TopologyBuilder;
+import org.apache.storm.generated.StormTopology;
+import org.apache.storm.topology.BoltDeclarer;
+import org.apache.storm.topology.TopologyBuilder;
 import org.springframework.beans.factory.FactoryBean;
 
 import java.util.HashMap;

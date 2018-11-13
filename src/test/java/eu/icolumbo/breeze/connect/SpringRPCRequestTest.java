@@ -1,7 +1,7 @@
 package eu.icolumbo.breeze.connect;
 
-import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.tuple.Fields;
+import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.tuple.Fields;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 

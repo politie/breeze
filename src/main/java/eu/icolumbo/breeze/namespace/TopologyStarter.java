@@ -2,11 +2,11 @@ package eu.icolumbo.breeze.namespace;
 
 import eu.icolumbo.breeze.SingletonApplicationContext;
 
-import backtype.storm.Config;
-import backtype.storm.ConfigValidation;
-import backtype.storm.LocalCluster;
-import backtype.storm.StormSubmitter;
-import backtype.storm.generated.StormTopology;
+import org.apache.storm.Config;
+import org.apache.storm.LocalCluster;
+import org.apache.storm.StormSubmitter;
+import org.apache.storm.generated.StormTopology;
+import org.apache.storm.validation.ConfigValidation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -141,18 +141,12 @@ public class TopologyStarter extends Thread {
 				Object value = null;
 				if (type == String.class)
 					value = entry;
-				if (type == ConfigValidation.IntegerValidator || type == ConfigValidation.PowerOf2Validator)
+				if (type == ConfigValidation.IntegerValidator.class || type == ConfigValidation.PowerOf2Validator.class)
 					value = Integer.valueOf(entry);
 				if (type == Boolean.class)
 					value = Boolean.valueOf(entry);
-				if (type == ConfigValidation.StringsValidator)
+				if (type == ConfigValidation.StringOrStringListValidator.class)
 					value = asList(entry.split(LIST_CONTINUATION_PATTERN));
-				if (type == ConfigValidation.IntegersValidator) {
-					List<Number> numbers = new ArrayList<>();
-					value = numbers;
-					for (String serial : entry.split(LIST_CONTINUATION_PATTERN))
-						numbers.add(Integer.valueOf(serial));
-				}
 
 				if (value == null) {
 					logger.warn("No parser for key '{}' type: {}", key, typeField);
